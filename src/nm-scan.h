@@ -94,11 +94,18 @@ typedef struct {
 } scan_range;
 
 typedef struct {
+    uint length;
+    const char * buffer;
+} scan_payload;
+
+typedef struct {
     int port;
+    char *service;
     int required;
     enum scan_protocol protocol;
-    char *service;
     enum nm_host_type device_type;
+    const char *query_buffer;
+    scan_payload query_payload;
 } scan_port;
 
 
@@ -129,8 +136,6 @@ typedef struct {
 } scan_listen_port;
 
 
-
-
 /* Utils */
 bool            scan_util_is_running();
 int             scan_util_get_sock_error(int sd);
@@ -155,8 +160,12 @@ void            scan_print_mates(nmlist *hosts);
 void            scan_process_result(scan_result *result, int *live_counter);
 void            scan_notify_start(void *callback);
 void            scan_notify_stop(void *callback);
-void            scan_run_dir_listen_thread(gpointer target_data, gpointer results_data);
-void            scan_run_dir_connect_thread(gpointer target_data, gpointer results_data);
+
+gpointer        scan_main_listen_thread(gpointer data);
+void            scan_listen_thread(gpointer target_data, gpointer results_data);
+gpointer        scan_main_connect_thread(gpointer data);
+void            scan_connect_thread(gpointer target_data, gpointer results_data);
+
 bool            scan_discover_subnet_hosts(int connect, int listen);
 bool            scan_discover_known_hosts();
 void           *scan_start_cli_thread(gpointer callback);

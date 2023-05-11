@@ -28,23 +28,55 @@ static scan_state scan = {
 // 5948/tcp open  unknown
 // 7680/tcp open  pando-pub
 
+#define UDP_QUERY_DNS "\x71\x80\x01\x00\x00\x01\x00\x00\x00\x00\x00\x01\x08\x61\x6f\x75" \
+"\x72\x67\x61\x74\x65\x03\x6c\x61\x6e\x00\x00\x01\x00\x01\x00\x00" \
+"\x29\x02\x00\x00\x00\x00\x00\x00\x00"
+
+
+#define UDP_QUERY_NBS "\x80\xf0\x00\x10\x00\x01\x00\x00\x00\x00\x00\x00\x20\x43\x4b\x41" \
+"\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41" \
+"\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21" \
+"\x00\x01"
 
 static const scan_port scan_port_list[] = {
-{.port = 80, .required = 1, .protocol = SCAN_PROTO_TCP, .service = "www", .device_type = HOST_TYPE_PC},
-{.port = 443, .required = 1, .protocol = SCAN_PROTO_TCP, .service = "www", .device_type = HOST_TYPE_PC},
-{.port = 445, .required = 1, .protocol = SCAN_PROTO_TCP, .service = "smb", .device_type = HOST_TYPE_PC},
-{.port = 53, .required = 1, .protocol = SCAN_PROTO_TCP, .service = "dns", .device_type = HOST_TYPE_ROUTER},
-{.port = 6668, .required = 1, .protocol = SCAN_PROTO_TCP, .service = "tuya", .device_type = HOST_TYPE_SMART_DEVICE},
-{.port = 62078, .required = 1, .protocol = SCAN_PROTO_TCP, .service = "itunes", .device_type = HOST_TYPE_PHONE},
-{.port = 22, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "ssh", .device_type = HOST_TYPE_ROUTER},
-{.port = 137, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "nbs", .device_type = HOST_TYPE_PC},
-{.port = 138, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "nbs", .device_type = HOST_TYPE_PC},
-{.port = 5353, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "mdns", .device_type = HOST_TYPE_PC},
-{.port = 5357, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "wsd", .device_type = HOST_TYPE_PC_WIN},
-{.port = 5040, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "?", .device_type = HOST_TYPE_PC},
-{.port = 5948, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "?", .device_type = HOST_TYPE_PC},
-{.port = 7680, .required = 0, .protocol = SCAN_PROTO_TCP, .service = "?", .device_type = HOST_TYPE_PC},
+    {.port = 80, .service = "http", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 443, .service = "https", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 8000, .service = "http-8000", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 8080, .service = "http-8080", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 1080, .service = "http-1080", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 8888, .service = "http-8888", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 137, .service = "nbs", .protocol = SCAN_PROTO_UDP, .required = 1,
+        .device_type = HOST_TYPE_PC, .query_payload = {sizeof(UDP_QUERY_NBS), UDP_QUERY_NBS} },
+    {.port = 445, .service = "smb", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 53, .service = "dns", .protocol = SCAN_PROTO_UDP, .required = 1,
+        .device_type = HOST_TYPE_ROUTER, .query_payload = {sizeof(UDP_QUERY_DNS), UDP_QUERY_DNS} },
+    {.port = 62078, .service = "itunes", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PHONE},
+    {.port = 60000, .service = "amazon", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_SMART_TV},
+    {.port = 22, .service = "ssh", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PC},
+    {.port = 6668, .service = "tuya", .protocol = SCAN_PROTO_TCP, .required = 0,
+        .device_type = HOST_TYPE_SMART_DEVICE},
+    {.port = 5353, .service = "mdns", .protocol = SCAN_PROTO_TCP, .required = 0,
+        .device_type = HOST_TYPE_PC},
+    {.port = 5357, .service = "wsd", .protocol = SCAN_PROTO_TCP, .required = 0,
+        .device_type = HOST_TYPE_PC_WIN},
+    {.port = 5040, .service = "?", .protocol = SCAN_PROTO_TCP, .required = 0,
+        .device_type = HOST_TYPE_PC},
+    {.port = 5948, .service = "?", .protocol = SCAN_PROTO_TCP, .required = 0, 
+        .device_type = HOST_TYPE_PC},
+    {.port = 7680, .service = "?", .protocol = SCAN_PROTO_TCP, .required = 0,
+        .device_type = HOST_TYPE_PC},
 };
+
 
 static const scan_listen_port scan_listen_list[] = {
         {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
@@ -61,6 +93,37 @@ static const scan_listen_port scan_listen_list[] = {
                 .mc_join = 1, .mc_ip = "224.0.0.251",
                 .query_cb = scan_proto_mdns_query, .response_cb = scan_proto_mdns_response}
 */
+};
+
+
+struct proto_sdp {
+    char *send_ip;
+    char *query_message;
+    char *header_start_search;
+    char *header_start_notify;
+    char *header_start_response;
+    char *key_notify_type;
+    char *key_search_type;
+} proto_ssdp = {
+        .send_ip = "239.255.255.250",
+        .query_message = "M-SEARCH * HTTP/1.1\r\n"
+                         "HOST: 239.255.255.250:1900\r\n"
+                         "MAN: \"ssdp:discover\"\r\n"
+                         "MX: 1\r\n"
+                         "ST: ssdp:all\r\n\r\n",
+        .header_start_search = "M-SEARCH * HTTP/1.1",
+        .header_start_notify = "NOTIFY * HTTP/1.1",
+        .header_start_response = "HTTP/1.1 200 OK",
+        .key_notify_type = "NT:",
+        .key_search_type = "ST:",
+};
+
+service_record ssdp_service_map[] = {
+        {.signature = "upnp:rootdevice", .service_name = "upnp", .host_type = HOST_TYPE_UNKNOWN},
+        {.signature = "urn:dial-multiscreen-org:device:dial", .service_name = "DIAL", .host_type = HOST_TYPE_SMART_TV},
+        {.signature = "urn:mdx-netflix-com:service:target", .service_name = "Netflix", .host_type = HOST_TYPE_UNKNOWN},
+        {.signature = "FIRETVSTICK", .service_name = NULL, .host_type = HOST_TYPE_SMART_TV},
+        {.signature = "urn:schemas-upnp-org:device:InternetGatewayDevice", .service_name = NULL, .host_type = HOST_TYPE_ROUTER},
 };
 
 
@@ -195,7 +258,7 @@ bool scan_util_calc_subnet_range(const char *ip, const char *netmask, scan_range
     }
     
     if(scan.opt_max_hosts > 0){
-        range->stop_num = range->start_num + scan.opt_max_hosts - 1;
+        range->stop_num = range->start_num + scan.opt_max_hosts;
         range->stop_addr.s_addr = htonl(range->stop_num);
     }
     range->length = range->stop_num - range->start_num + 1;
@@ -246,6 +309,8 @@ void scan_print_mates(nmlist *hosts) {
 }
 
 int scan_list_arp_hosts(){
+    log_trace("scan_list_arp_hosts: called");
+    
     FILE *arp_fd;
     nm_host *entry;
 
@@ -288,13 +353,14 @@ int scan_list_arp_hosts(){
         num_found++;
     }
     fclose(arp_fd);
+    
+    log_trace("scan_list_arp_hosts: ending");
     return num_found;
 }
 
 
 int scan_list_gateways() {
-
-    log_debug("scan_list_gateways: called");
+    log_trace("scan_list_gateways: called");
     
     int num_ip4_found = 0, num_ip6_found = 0, tokens;
     char line[NL_GEN_BUFF], ip_buffer[NM_MAX_BUFF_IP], host_buffer[NM_MAX_BUFF_HOST];
@@ -359,7 +425,7 @@ int scan_list_gateways() {
 //                 gw_host6 = nm_host_init(HOST_TYPE_ROUTER);
 
             inet_ntop(AF_INET6, &gateway6.__in6_u, ip6_buffer, sizeof(ip6_buffer));
-            // log_debug("Printing IPv6 %s", ip6_buffer);
+            // log_trace("Printing IPv6 %s", ip6_buffer);
 
             if(!scan.opt_skip_resolve && scan_resolve_hostname6(ip6_buffer, host_buffer, sizeof(host_buffer)))
                 nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, host_buffer);
@@ -373,7 +439,7 @@ int scan_list_gateways() {
     }
     fclose(fp);
 
-    log_debug("scan_list_gateways: ending with ip4: %i, ip6: %i", num_ip4_found, num_ip6_found);
+    log_trace("scan_list_gateways: ending with ip4: %i, ip6: %i", num_ip4_found, num_ip6_found);
     return num_ip4_found + num_ip6_found;
 }
 
@@ -410,6 +476,7 @@ bool scan_list_localhost() {
                 nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, host_buff);
             else
                 nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, NULL);
+            
 //            if(strlen(entry->hostname) == 0){
 //                strncpy(entry->hostname, host_buff, sizeof(entry->hostname));
 //            }else if(strcmp(buff, entry->hostname) != 0){
@@ -430,6 +497,7 @@ bool scan_list_localhost() {
 //                entry->list_ip6 = nm_host_other_add_unique(entry->list_ip6, buff);
         } else if (family == AF_PACKET) {
             scan_util_format_hw_address(hwaddr_buffer, sizeof(hwaddr_buffer), (struct sockaddr_ll *) ifa->ifa_addr);
+            scan_util_update_hw_vendor(hwaddr_buffer, sizeof(hwaddr_buffer));
             nm_host_set_attributes(scan.localhost, NULL, NULL, NULL, hwaddr_buffer, NULL);
 //            if(!strlen(entry->hw_addr))
 //                strncpy(entry->hw_addr, buff, sizeof(entry->hw_addr));
@@ -438,6 +506,9 @@ bool scan_list_localhost() {
         }
     }
     freeifaddrs(if_addr);
+    
+    scan.hosts = nm_host_merge_in_list(scan.hosts, scan.localhost);
+    
     return true;
 
 }
@@ -526,10 +597,10 @@ void scan_process_result(scan_result *result, int *live_counter) {
         host = nm_host_init(result->host_type);
         if(result->hostname != NULL) {
             nm_host_set_attributes(host, ip, NULL, NULL, NULL, result->hostname);
-            printf("  --> SCAN %s, found Live host [%s] [%s]\n", dir, ip, result->hostname);
+            //printf("  --> SCAN %s, found Live host [%s] [%s]\n", dir, ip, result->hostname);
         }else {
             nm_host_set_attributes(host, ip, NULL, NULL, NULL, ip);
-            printf("  --> SCAN %s, found Live host [%s]\n", dir, ip);
+            //printf("  --> SCAN %s, found Live host [%s]\n", dir, ip);
         }
         if(result->services)
             nm_host_add_services(host, result->services);
@@ -578,8 +649,8 @@ void scan_notify_stop(void *callback){
         ((scanner_callback)callback)(SCAN_EVENT_END, NULL);
 }
 
-gpointer scan_run_dir_listen(gpointer data){
-    log_debug("Main Listen Thread Starting...");
+gpointer scan_main_listen_thread(gpointer data){
+    log_debug("scan_main_listen_thread Starting...");
     unsigned long start_time = nm_time_ms();
 
     if(scan.quit_now)
@@ -592,13 +663,13 @@ gpointer scan_run_dir_listen(gpointer data){
     GAsyncQueue *results_queue;
     GError *error = NULL;
 
-    log_debug("Main Listen Thread, range of %i ports", num_listen_ports);
+    log_info("scan_main_listen_thread: range of %i ports", num_listen_ports);
 
     results_queue = g_async_queue_new();
-    thread_pool = g_thread_pool_new(scan_run_dir_listen_thread, results_queue,
+    thread_pool = g_thread_pool_new(scan_listen_thread, results_queue,
                                      scan.opt_listen_threads, false, &error);
     if(error != NULL){
-        log_warn("Main Listen Thread, error starting threads, %i, %s \n", error->code, error->message);
+        log_warn("scan_main_listen_thread: error starting threads, %i, %s \n", error->code, error->message);
         g_error_free(error);
         return NULL;
     }
@@ -610,7 +681,7 @@ gpointer scan_run_dir_listen(gpointer data){
 
         g_thread_pool_push(thread_pool, (gpointer)&scan_listen_list[i], &error);
         if(error != NULL){
-            log_info("Main Listen Thread, error pushing entry %i \n", i);
+            log_info("scan_main_listen_thread: error pushing entry %i \n", i);
             g_error_free(error);
         }
     }
@@ -636,7 +707,7 @@ gpointer scan_run_dir_listen(gpointer data){
         }
         usleep(scan.opt_poll_thread_work_us);
         if(nm_time_ms_diff(start_time) > scan_timeout_ms){
-            log_info("Main Listen Thread, Subnet scan timeout reached %u ms \n", scan_timeout_ms);
+            log_info("scan_main_listen_thread: Subnet scan timeout reached %u ms \n", scan_timeout_ms);
             break;
         }
     }
@@ -651,19 +722,19 @@ gpointer scan_run_dir_listen(gpointer data){
         num_results++;
     }
 
-    log_info("Main Listen Thread, discovery summary: total ports %i found %i hosts in %lus]\n",
+    log_info("scan_main_listen_thread: discovery summary: total ports %i found %i hosts in %lus]\n",
               num_listen_ports, num_live, nm_time_ms_diff(start_time) / 1000);
 
     g_async_queue_unref(results_queue);
 
-    log_debug("Main Listen Thread ending");
+    log_debug("scan_main_listen_thread: ending");
     return NULL;
 }
 
-void scan_run_dir_listen_thread(gpointer target_data, gpointer results_data) {
-    log_debug("scan_run_dir_listen_thread called");
+void scan_listen_thread(gpointer target_data, gpointer results_data) {
+    log_debug("scan_listen_thread called");
 
-    int sd, max_wait_time, min_wait_time, senders_seen, mc_loop;
+    int sd, max_wait_time, min_wait_time, mc_loop;
     long int recv_ret, poll_ret, actual_size;
     unsigned long thread_start;
     char thread_signature[64];
@@ -680,8 +751,10 @@ void scan_run_dir_listen_thread(gpointer target_data, gpointer results_data) {
     GAsyncQueue *results_queue;
 
     thread_start = nm_time_ms();
-    if(!scan_util_is_running())
+    if(!scan_util_is_running()) {
+        log_debug("scan_listen_thread: not running?");
         return;
+    }
 
     //prepare results and listen port
     //sender_results = scan_result_dict_new();
@@ -738,7 +811,7 @@ void scan_run_dir_listen_thread(gpointer target_data, gpointer results_data) {
     }
 
     poll_arg.events = POLLIN;
-    poll_arg.fd;
+    poll_arg.fd = sd;
     log_debug("%s Listening on port %hi", thread_signature, port_num);
 
     while (nm_time_ms_diff(thread_start) <= max_wait_time){
@@ -802,8 +875,8 @@ void scan_run_dir_listen_thread(gpointer target_data, gpointer results_data) {
     log_debug("%s End listen thread [time: %lu ms]!", thread_signature, nm_time_ms_diff(thread_start));
 }
 
-gpointer scan_run_dir_connect(gpointer data){
-    log_debug("Main Connect Thread Starting...");
+gpointer scan_main_connect_thread(gpointer data){
+    log_trace("scan_main_connect_thread: starting");
     unsigned long start_time = nm_time_ms();
 
     uint32_t curr_addr, curr_num;
@@ -818,7 +891,7 @@ gpointer scan_run_dir_connect(gpointer data){
         return NULL;
 
     if (scan.localhost == NULL || scan.localhost->type != HOST_TYPE_LOCALHOST){
-        log_info("Main Connect Thread, Error localhost was not resolved");
+        log_info("scan_main_connect_thread: Error localhost was not resolved");
         return NULL;
     }
 
@@ -831,14 +904,14 @@ gpointer scan_run_dir_connect(gpointer data){
     
     inet_ntop(AF_INET, &range.start_addr, start_ip, NM_MAX_BUFF_IP);
     inet_ntop(AF_INET, &range.stop_addr, end_ip, NM_MAX_BUFF_IP);
-    log_debug("Main Connect Thread, range of %i hosts: [%s to %s]", range.length, start_ip, end_ip);
+    log_info("scan_main_connect_thread: range of %i hosts: [%s to %s]", range.length, start_ip, end_ip);
 
 
     results_queue = g_async_queue_new();
-    thread_pool = g_thread_pool_new(scan_run_dir_connect_thread, results_queue,
+    thread_pool = g_thread_pool_new(scan_connect_thread, results_queue,
                                      scan.opt_connect_threads, false, &error);
     if(error != NULL){
-        log_warn("Main Connect Thread, error starting threads, %i, %s \n", error->code, error->message);
+        log_warn("scan_main_connect_thread: error starting threads, %i, %s \n", error->code, error->message);
         g_error_free(error);
         return NULL;
     }
@@ -854,7 +927,7 @@ gpointer scan_run_dir_connect(gpointer data){
 
         g_thread_pool_push(thread_pool, (gpointer)(intptr_t)curr_addr, &error);
         if(error != NULL){
-            log_info("Main Connect Thread, error pushing entry %u \n", curr_num);
+            log_info("scan_main_connect_thread: error pushing entry %u \n", curr_num);
             g_error_free(error);
         }
     }
@@ -880,7 +953,7 @@ gpointer scan_run_dir_connect(gpointer data){
         }
         usleep(scan.opt_poll_thread_work_us);
         if(nm_time_ms_diff(start_time) > scan_timeout_ms){
-            log_info("Main Connect Thread, Subnet scan timeout reached %u ms \n", scan_timeout_ms);
+            log_info("scan_main_connect_thread: Subnet scan timeout reached %u ms \n", scan_timeout_ms);
             break;
         }
     }
@@ -895,25 +968,166 @@ gpointer scan_run_dir_connect(gpointer data){
         num_scanned++;
     }
 
-    log_info("Main Connect Thread, discovery summary: total targets %i, actual scanned %i with %i Live in %lus]\n",
-              range.length, num_scanned, num_live, nm_time_ms_diff(start_time) / 1000);
+    log_info(   "scan_main_connect_thread: discovery summary: total targets %i, " \
+                "actual scanned %i with %i Live in %lus]\n",
+                range.length, num_scanned, num_live, nm_time_ms_diff(start_time) / 1000);
 
     g_async_queue_unref(results_queue);
 
-    log_debug("Main Connect Thread ending");
+    log_trace("scan_main_connect_thread: ending");
     return NULL;
 
 
 }
 
-void scan_run_dir_connect_thread(gpointer target_data, gpointer results_data) {
-    log_debug("scan_run_dir_connect_thread called");
-    int port_index, ports_to_scan, sd, cnct_ret, poll_ret, so_error, so_state;
+int scan_probe_send_tcp(const char *thread_id, scan_result *result, 
+                          scan_port *port_def, struct in_addr ip_addr) {
+
+    int sd, cnct_ret, poll_ret, so_error, so_state;
+    struct sockaddr_in target_addr;
+    struct pollfd poll_arg;
+
+    sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_IP);
+    if(sd < 0){
+        log_debug("%s\t socket errno: %i, errdesc: %s", thread_id, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        return -EIO;
+    }
+
+    target_addr.sin_family = AF_INET;
+    target_addr.sin_addr = ip_addr;
+    target_addr.sin_port = htons(port_def->port);
+
+    cnct_ret = connect(sd, (struct sockaddr*)&target_addr, sizeof(target_addr));
+    if(cnct_ret != -1 || errno != EINPROGRESS){
+        log_debug("%s\t connect unexpected error on port %i, errno: %i, errdesc: %s\n", thread_id, port_def->port,
+                    errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        close(sd);
+        return -EIO;
+    }
+    
+    poll_arg.fd = sd;
+    /* include err event as open connect_ports can be too quick */
+    poll_arg.events = POLL_IN | POLL_OUT | POLL_ERR;
+    poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
+
+    so_error = scan_util_get_sock_error(sd);
+    so_state = scan_util_get_sock_info(sd);
+    
+    //log_debug("%s\t connect after_poll - [%lu ms] poll_revents %hu, socket_state: %i, socket_error errno: %i, errdesc: %s",
+    //thread_id, connect_diff, poll_arg.revents, so_state, so_error, strerror(so_error));
+
+    /* check poll result and socket state */
+    if(poll_ret > 0){
+        //poll has connect() success or error is connection refused, both mean host is live
+        if(so_error == 0 || so_error == ECONNREFUSED){
+            result->response = SCAN_HSTATE_LIVE;
+            if(so_error == 0) {
+                result->host_type = port_def->device_type;
+                result->services = nm_list_add(result->services, port_def->service);
+                log_trace("%s host found, connect port %hu open", 
+                          thread_id, port_def->port);
+            }else {
+                log_trace("%s host found, connect port %hu passive",
+                          thread_id, port_def->port);
+            }
+        }
+    }else if(poll_ret == 0){
+        //poll timed out
+        so_error = scan_util_get_sock_error(sd);
+        //log_debug("%s\t poll - timeout, port %i, sockerrno %i, errdesc: %s", thread_id,
+        //        port_def->port, so_error, strerror(so_error));
+    }else{
+        //poll error
+        log_trace("%s\t poll - error with port %i, error errno: %i, errdesc: %s", 
+                 thread_id, port_def->port, errno, strerror(errno));
+    }
+    
+    close(sd);
+    return 0;
+}
+
+
+int scan_probe_send_udp(const char *thread_id, scan_result *result, 
+                          scan_port *port_def, struct in_addr ip_addr) {
+
+    int sd, send_ret, recv_ret, poll_ret;
+    struct sockaddr_in target_addr;
+    socklen_t addr_size;
+    struct pollfd poll_arg;
+    char recvbuffer[NL_GEN_BUFF];
+    recvbuffer[0] = 0;
+    
+    sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_IP);
+    if(sd < 0){
+        log_debug("%s\t socket errno: %i, errdesc: %s", thread_id, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        return -EIO;
+    }
+
+    target_addr.sin_family = AF_INET;
+    target_addr.sin_addr = ip_addr;
+    target_addr.sin_port = htons(port_def->port);
+    addr_size = sizeof(target_addr);
+
+    // send the buffer
+    send_ret = sendto(sd, port_def->query_payload.buffer, port_def->query_payload.length-1, 0,
+                      (struct sockaddr*)&target_addr, sizeof(target_addr));
+    
+    if(send_ret == -1){
+        log_trace("%s\t sendto unexpected error on port %i, errno: %i, errdesc: %s\n", 
+                  thread_id, port_def->port, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        close(sd);
+        return -EIO;
+    }
+    
+    
+    // request non-blocking response
+    recv_ret = recvfrom(sd, recvbuffer, sizeof(recvbuffer),
+                        0, (struct sockaddr*)&target_addr, &addr_size);
+    if(recv_ret == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
+        log_trace("%s\t recvfrom unexpected error on port %i, errno: %i, errdesc: %s\n", 
+                  thread_id, port_def->port, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        close(sd);
+        return -EIO;
+    }
+    
+    // wait for response
+    poll_arg.fd = sd;
+    /* include err event as open connect_ports can be too quick */
+    poll_arg.events = POLL_IN;
+    poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
+
+    /* check poll result and socket state */
+    if(poll_ret > 0 && poll_arg.revents & POLL_IN){
+        //poll has data from recvfrom
+        result->response = SCAN_HSTATE_LIVE;
+        result->host_type = port_def->device_type;
+        result->services = nm_list_add(result->services, port_def->service);
+        log_trace("%s host found, receive from port %hu", 
+                    thread_id, port_def->port);
+    }else if(poll_ret == 0){    //poll timed out
+        log_trace("%s\t poll-udp - timeout, port %i",
+                  thread_id, port_def->port);
+    }else{      //poll error
+        log_trace("%s\t poll-udp - error with port %i, error errno: %i, errdesc: %s", 
+                 thread_id, port_def->port, errno, strerror(errno));
+    }
+    
+    close(sd);
+    return 0;
+}
+
+
+void scan_connect_thread(gpointer target_data, gpointer results_data) {
+    log_trace("scan_run_dir_connect_thread called");
+    int port_index, ports_to_scan, ret;
     char *ip_str, thread_id[64], hostname_buffer[NM_MAX_BUFF_HOST];
     long unsigned thread_start, connect_start, connect_diff;
     struct in_addr ip_addr;
-    struct sockaddr_in target_addr;
-    struct pollfd poll_arg;
     scan_port port_def;
     scan_result *result;
     GAsyncQueue *results_queue;
@@ -938,79 +1152,33 @@ void scan_run_dir_connect_thread(gpointer target_data, gpointer results_data) {
     //ports_to_scan = sizeof(scan.connect_ports) / sizeof(scan.connect_ports[0]);
     ports_to_scan = sizeof(scan_port_list) / sizeof(scan_port_list[0]);
 
-    log_debug("%s Starting scan for %i ports", thread_id, ports_to_scan);
+    log_trace("%s Starting scan for %i ports", thread_id, ports_to_scan);
     port_index = 0;
     for(; port_index < ports_to_scan; port_index++){
         if(scan.quit_now)
             break;
 
-        //skip uninitialised port_def numbers
-//        if(scan.connect_ports[port_index] == 0)
-//            continue;
-
         port_def = scan_port_list[port_index];
         if(result->response == SCAN_HSTATE_LIVE && port_def.required == 0)
             break;
-
-        sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_IP);
-        if(sd < 0){
-            log_info("%s\t socket errno: %i, errdesc: %s", thread_id, errno, strerror(errno));
-            result->response = SCAN_HSTATE_ERROR;
-            break;
-        }
-
-        target_addr.sin_family = AF_INET;
-        target_addr.sin_addr = ip_addr;
-        target_addr.sin_port = htons(port_def.port);
-
-        //log_debug("%s\t trying port_def %i", thread_id, port_def.port);
+        
         connect_start = nm_time_ms();
-        cnct_ret = connect(sd, (struct sockaddr*)&target_addr, sizeof(target_addr));
-        if(cnct_ret != -1 || errno != EINPROGRESS){
-            log_info("%s\t connect unexpected error on port %i, errno: %i, errdesc: %s\n", thread_id, port_def.port,
-                      errno, strerror(errno));
-            result->response = SCAN_HSTATE_ERROR;
-            close(sd);
+        
+        if(port_def.protocol == SCAN_PROTO_TCP)
+            ret = scan_probe_send_tcp(thread_id, result, &port_def, ip_addr);
+        else if(port_def.protocol == SCAN_PROTO_UDP)
+            ret = scan_probe_send_udp(thread_id, result, &port_def, ip_addr);
+        
+        if(ret)
             break;
-        }
-        poll_arg.fd = sd;
-        poll_arg.events = POLL_IN | POLL_OUT | POLL_ERR;    /* include err event as open connect_ports can be too quick */
-        poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
-
+        
+        //TODO: time used?
         connect_diff = nm_time_ms_diff(connect_start);
-        so_error = scan_util_get_sock_error(sd);
-        so_state = scan_util_get_sock_info(sd);
-        //log_debug("%s\t connect after_poll - [%lu ms] poll_revents %hu, socket_state: %i, socket_error errno: %i, errdesc: %s",
-        //        thread_id, connect_diff, poll_arg.revents, so_state, so_error, strerror(so_error));
 
-        /* check poll result and socket state */
-        if(poll_ret > 0){
-            //poll has connect() success or error is connection refused, both mean host is live
-            if(so_error == 0 || so_error == ECONNREFUSED){
-                result->response = SCAN_HSTATE_LIVE;
-                if(so_error == 0) {
-                    result->host_type = port_def.device_type;
-                    result->services = nm_list_add(result->services, port_def.service);
-                    log_debug("%s host found, connect port %hu open", thread_id, port_def.port, port_def.device_type);
-                }else {
-                    log_debug("%s host found, connect port %hu passive", thread_id, port_def.port);
-                }
-            }
-        }else if(poll_ret == 0){
-            //poll timed out
-            so_error = scan_util_get_sock_error(sd);
-            //log_debug("%s\t poll - timeout, port %i, sockerrno %i, errdesc: %s", thread_id,
-            //        port_def.port, so_error, strerror(so_error));
-        }else{
-            //poll error
-            log_info("%s\t poll - error with port %i, error errno: %i, errdesc: %s", thread_id,
-                      port_def.port, errno, strerror(errno));
-        }
-        close(sd);
     }
 
     if(port_index > 0 && result->response == SCAN_HSTATE_UNKNOWN){
-        log_debug("%s host dead, ", thread_id);
+        log_trace("%s host dead, ", thread_id);
         result->response = SCAN_HSTATE_DEAD;
     }else if(result->response == SCAN_HSTATE_LIVE){
         if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_str, hostname_buffer, sizeof(hostname_buffer)))
@@ -1019,12 +1187,12 @@ void scan_run_dir_connect_thread(gpointer target_data, gpointer results_data) {
 
     g_async_queue_push(results_queue, result);
 
-    log_debug("%s End scan thread [time: %lu ms]!", thread_id, nm_time_ms_diff(thread_start));
+    log_trace("%s End scan thread [time: %lu ms]!", thread_id, nm_time_ms_diff(thread_start));
 }
 
 
 bool scan_discover_subnet_hosts(int connect, int listen) {
-    log_debug("scan_discover_subnet_hosts starting...");
+    log_trace("scan_discover_subnet_hosts starting...");
     if(!connect && !listen)
         return false;
 
@@ -1032,14 +1200,14 @@ bool scan_discover_subnet_hosts(int connect, int listen) {
     GError *conn_err = NULL, *list_err = NULL;
 
     if(connect){
-        conn_thread = g_thread_try_new("ConnectMainThread", scan_run_dir_connect, NULL, &conn_err);
+        conn_thread = g_thread_try_new("ConnectMainThread", scan_main_connect_thread, NULL, &conn_err);
         if(conn_err != NULL)
-            log_warn("Error starting the main connect thread, code %i, %s", conn_err->code, conn_err->message);
+            log_error("Error starting the main connect thread, code %i, %s", conn_err->code, conn_err->message);
     }
     if(listen){
-        list_thread = g_thread_try_new("ListenMainThread", scan_run_dir_listen, NULL, &list_err);
+        list_thread = g_thread_try_new("ListenMainThread", scan_main_listen_thread, NULL, &list_err);
         if(list_err != NULL)
-            log_warn("Error starting the main listen thread, code %i, %s", list_err->code, list_err->message);
+            log_error("Error starting the main listen thread, code %i, %s", list_err->code, list_err->message);
     }
 
     //wait for all the scans to end
@@ -1049,7 +1217,7 @@ bool scan_discover_subnet_hosts(int connect, int listen) {
     if(listen)
         g_thread_join(list_thread);
 
-    log_debug("scan_discover_subnet_hosts ending");
+    log_trace("scan_discover_subnet_hosts ending");
     return true;
 
 //
@@ -1182,36 +1350,6 @@ bool scan_discover_subnet_hosts(int connect, int listen) {
 //    g_info("scan_discover_subnet_hosts ending");
 //    return true;
 }
-
-struct proto_sdp {
-    char *send_ip;
-    char *query_message;
-    char *header_start_search;
-    char *header_start_notify;
-    char *header_start_response;
-    char *key_notify_type;
-    char *key_search_type;
-} proto_ssdp = {
-        .send_ip = "239.255.255.250",
-        .query_message = "M-SEARCH * HTTP/1.1\r\n"
-                         "HOST: 239.255.255.250:1900\r\n"
-                         "MAN: \"ssdp:discover\"\r\n"
-                         "MX: 1\r\n"
-                         "ST: ssdp:all\r\n\r\n",
-        .header_start_search = "M-SEARCH * HTTP/1.1",
-        .header_start_notify = "NOTIFY * HTTP/1.1",
-        .header_start_response = "HTTP/1.1 200 OK",
-        .key_notify_type = "NT:",
-        .key_search_type = "ST:",
-};
-
-service_record ssdp_service_map[] = {
-        {.signature = "upnp:rootdevice", .service_name = "upnp", .host_type = HOST_TYPE_UNKNOWN},
-        {.signature = "urn:dial-multiscreen-org:device:dial", .service_name = "DIAL", .host_type = HOST_TYPE_SMART_TV},
-        {.signature = "urn:mdx-netflix-com:service:target", .service_name = "Netflix", .host_type = HOST_TYPE_UNKNOWN},
-        {.signature = "FIRETVSTICK", .service_name = NULL, .host_type = HOST_TYPE_SMART_TV},
-        {.signature = "urn:schemas-upnp-org:device:InternetGatewayDevice", .service_name = NULL, .host_type = HOST_TYPE_ROUTER},
-};
 
 
 
@@ -1371,11 +1509,12 @@ void scan_start() {
         puts("scan_start: Already running");
         return;
     }
+    scan.running = 1;
     
 
     if(!scan_list_localhost())
         log_info("Could not resolve localhost address details");
-    nm_host_print(scan.localhost);
+    //nm_host_print(scan.localhost);
     
     int routers_found = scan_list_gateways();
     log_debug("Router entries found: %d", routers_found);
@@ -1388,13 +1527,15 @@ void scan_start() {
     }
     
     if(!scan.opt_scan_known_only){
-        printf("> Starting scan... \n");
+        printf("> Starting scan...");
         scan_discover_subnet_hosts(scan.opt_connect_threads > 0, scan.opt_listen_threads > 0);
         
-        puts("Done");
+        puts("Done!");
         puts("Scan Results: ------------------------------");
         scan_print_mates(scan.hosts);
     }
+    
+    scan.running = 0;
 
     log_debug("scan_start: end");
 
@@ -1453,7 +1594,7 @@ void scan_destroy(void) {
     scan.running = 0;
     vendor_db_destroy();
 
-    nm_host_destroy(scan.localhost);
+    //nm_host_destroy(scan.localhost);
     nm_list_foreach(host, scan.hosts)
         nm_host_destroy(host->data);
     nm_list_free(scan.hosts, false);

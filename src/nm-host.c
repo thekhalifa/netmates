@@ -92,7 +92,7 @@ nmlist *nm_host_merge_in_list(nmlist *list, nm_host *newhost) {
     }
     
     if(foundhost){
-        log_debug("nm_host_merge_in_list: found matching host, merging %s with %s",
+        log_trace("nm_host_merge_in_list: found matching host, merging %s with %s",
                     nm_host_label(newhost), nm_host_label(foundhost));
         nm_host_merge(foundhost, newhost);
         return list;
