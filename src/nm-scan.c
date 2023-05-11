@@ -135,72 +135,72 @@ bool scan_util_is_running(){
     return false;
 }
 
-void scan_util_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len){
-    struct in_addr addr;
-    addr.s_addr = ip_addr;
+// void scan_util_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len){
+//     struct in_addr addr;
+//     addr.s_addr = ip_addr;
+// 
+//     inet_ntop(AF_INET, &addr, ip_buffer, ip_len);
+// 
+// }
+// 
+// void scan_util_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll){
+//     if(sa_ll == NULL)
+//         return;
+// 
+//     int len = 0;
+//     for(int i=0; i < sa_ll->sll_halen && (len + 3) < buff_len; i++)
+//         len += sprintf(&buff[len], "%02x%s", sa_ll->sll_addr[i], i + 1 < sa_ll->sll_halen ? ":" : "");
+// 
+// }
+// 
+// bool scan_util_validate_hw_address(char *address, int real_address) {
+//     if(address == NULL || strlen(address) != 17)
+//         return false;
+// 
+//     //ab:bc:cd:de:ef:ff
+//     uint32_t segment[6];
+//     char buffer[64];
+//     int num_tokens = sscanf(address, "%2x:%2x:%2x:%2x:%2x:%2x%s",
+//                             &segment[0], &segment[1], &segment[2], &segment[3], &segment[4], &segment[5], buffer);
+//     if(num_tokens != 6)
+//         return false;
+//     for(int i=0; i<6; i++){
+//         if((segment[i] & 0xFFFFFF00) != 0)
+//             return false;
+//     }
+//     if(real_address){
+//         int count_zeros = 0;
+//         for(int i=0; i<6; i++){
+//             if(segment[i] == 0)
+//                 count_zeros++;
+//         }
+//         if(count_zeros > 3)
+//             return false;
+//     }
+//     return true;
+// }
 
-    inet_ntop(AF_INET, &addr, ip_buffer, ip_len);
-
-}
-
-void scan_util_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll){
-    if(sa_ll == NULL)
-        return;
-
-    int len = 0;
-    for(int i=0; i < sa_ll->sll_halen && (len + 3) < buff_len; i++)
-        len += sprintf(&buff[len], "%02x%s", sa_ll->sll_addr[i], i + 1 < sa_ll->sll_halen ? ":" : "");
-
-}
-
-bool scan_util_validate_hw_address(char *address, int real_address) {
-    if(address == NULL || strlen(address) != 17)
-        return false;
-
-    //ab:bc:cd:de:ef:ff
-    uint32_t segment[6];
-    char buffer[64];
-    int num_tokens = sscanf(address, "%2x:%2x:%2x:%2x:%2x:%2x%s",
-                            &segment[0], &segment[1], &segment[2], &segment[3], &segment[4], &segment[5], buffer);
-    if(num_tokens != 6)
-        return false;
-    for(int i=0; i<6; i++){
-        if((segment[i] & 0xFFFFFF00) != 0)
-            return false;
-    }
-    if(real_address){
-        int count_zeros = 0;
-        for(int i=0; i<6; i++){
-            if(segment[i] == 0)
-                count_zeros++;
-        }
-        if(count_zeros > 3)
-            return false;
-    }
-    return true;
-}
-
-void scan_util_update_hw_vendor(char *hw_addr, int size) {
-    if(hw_addr == NULL || strlen(hw_addr) == 0)
-        return;
-
-    size_t len = strlen(hw_addr);
-    size_t free_space = size - len - 1;
-    if(free_space < 12)
-        return;
-
-    int tokens;
-    char addr_buffer[32];
-    tokens = sscanf(hw_addr, "%c%c:%c%c:%c%c:%*s", &addr_buffer[0], &addr_buffer[1],
-                            &addr_buffer[2], &addr_buffer[3], &addr_buffer[4], &addr_buffer[5]);
-    addr_buffer[6] = 0;
-    if(tokens != 6 || strlen(addr_buffer) != 6)
-        return;
-
-    const char *vendor_org = vendor_db_query(addr_buffer);
-    if(vendor_org != NULL)
-        snprintf(hw_addr+len, free_space, " [%s]", vendor_org);
-}
+// void scan_util_update_hw_vendor(char *hw_addr, int size) {
+//     if(hw_addr == NULL || strlen(hw_addr) == 0)
+//         return;
+// 
+//     size_t len = strlen(hw_addr);
+//     size_t free_space = size - len - 1;
+//     if(free_space < 12)
+//         return;
+// 
+//     int tokens;
+//     char addr_buffer[32];
+//     tokens = sscanf(hw_addr, "%c%c:%c%c:%c%c:%*s", &addr_buffer[0], &addr_buffer[1],
+//                             &addr_buffer[2], &addr_buffer[3], &addr_buffer[4], &addr_buffer[5]);
+//     addr_buffer[6] = 0;
+//     if(tokens != 6 || strlen(addr_buffer) != 6)
+//         return;
+// 
+//     const char *vendor_org = vendor_db_query(addr_buffer);
+//     if(vendor_org != NULL)
+//         snprintf(hw_addr+len, free_space, " [%s]", vendor_org);
+// }
 
 bool scan_util_addr_seen(const in_addr_t target, const in_addr_t *list, const int list_len){
     for(int i = 0; i < list_len; i++){
@@ -336,11 +336,11 @@ int scan_list_arp_hosts(){
         num_tokens = sscanf(line, "%s 0x%x 0x%x %99s %*99s* %*99s\n", ip_buffer, &type, &flags, hw_addr);
         if (num_tokens < 4)
             break;
-        if(!scan_util_validate_hw_address(hw_addr, 1))
+        if(!nm_validate_hw_address(hw_addr, 1))
             continue;
 
         if(!scan.opt_skip_resolve)
-            scan_util_update_hw_vendor(hw_addr, sizeof(hw_addr));
+            nm_update_hw_vendor(hw_addr, sizeof(hw_addr));
 
         entry = nm_host_init(HOST_TYPE_UNKNOWN);
         entry->ip_addr = inet_addr(ip_buffer);
@@ -496,8 +496,8 @@ bool scan_list_localhost() {
 //            else
 //                entry->list_ip6 = nm_host_other_add_unique(entry->list_ip6, buff);
         } else if (family == AF_PACKET) {
-            scan_util_format_hw_address(hwaddr_buffer, sizeof(hwaddr_buffer), (struct sockaddr_ll *) ifa->ifa_addr);
-            scan_util_update_hw_vendor(hwaddr_buffer, sizeof(hwaddr_buffer));
+            nm_format_hw_address(hwaddr_buffer, sizeof(hwaddr_buffer), (struct sockaddr_ll *) ifa->ifa_addr);
+            nm_update_hw_vendor(hwaddr_buffer, sizeof(hwaddr_buffer));
             nm_host_set_attributes(scan.localhost, NULL, NULL, NULL, hwaddr_buffer, NULL);
 //            if(!strlen(entry->hw_addr))
 //                strncpy(entry->hw_addr, buff, sizeof(entry->hw_addr));
@@ -983,7 +983,7 @@ gpointer scan_main_connect_thread(gpointer data){
 int scan_probe_send_tcp(const char *thread_id, scan_result *result, 
                           scan_port *port_def, struct in_addr ip_addr) {
 
-    int sd, cnct_ret, poll_ret, so_error, so_state;
+    int sd, cnct_ret, poll_ret, so_error;
     struct sockaddr_in target_addr;
     struct pollfd poll_arg;
 
@@ -1013,8 +1013,7 @@ int scan_probe_send_tcp(const char *thread_id, scan_result *result,
     poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
 
     so_error = scan_util_get_sock_error(sd);
-    so_state = scan_util_get_sock_info(sd);
-    
+    //so_state = scan_util_get_sock_info(sd);
     //log_debug("%s\t connect after_poll - [%lu ms] poll_revents %hu, socket_state: %i, socket_error errno: %i, errdesc: %s",
     //thread_id, connect_diff, poll_arg.revents, so_state, so_error, strerror(so_error));
 
@@ -1036,8 +1035,8 @@ int scan_probe_send_tcp(const char *thread_id, scan_result *result,
     }else if(poll_ret == 0){
         //poll timed out
         so_error = scan_util_get_sock_error(sd);
-        //log_debug("%s\t poll - timeout, port %i, sockerrno %i, errdesc: %s", thread_id,
-        //        port_def->port, so_error, strerror(so_error));
+        log_trace("%s\t poll - timeout, port %i, sockerrno %i, errdesc: %s",
+                  thread_id, port_def->port, so_error, strerror(so_error));
     }else{
         //poll error
         log_trace("%s\t poll - error with port %i, error errno: %i, errdesc: %s", 
@@ -1124,9 +1123,9 @@ int scan_probe_send_udp(const char *thread_id, scan_result *result,
 
 void scan_connect_thread(gpointer target_data, gpointer results_data) {
     log_trace("scan_run_dir_connect_thread called");
-    int port_index, ports_to_scan, ret;
+    int port_index, ports_to_scan, ret = 0;
     char *ip_str, thread_id[64], hostname_buffer[NM_MAX_BUFF_HOST];
-    long unsigned thread_start, connect_start, connect_diff;
+    long unsigned thread_start;
     struct in_addr ip_addr;
     scan_port port_def;
     scan_result *result;
@@ -1162,7 +1161,7 @@ void scan_connect_thread(gpointer target_data, gpointer results_data) {
         if(result->response == SCAN_HSTATE_LIVE && port_def.required == 0)
             break;
         
-        connect_start = nm_time_ms();
+        //connect_start = nm_time_ms();
         
         if(port_def.protocol == SCAN_PROTO_TCP)
             ret = scan_probe_send_tcp(thread_id, result, &port_def, ip_addr);
@@ -1173,7 +1172,7 @@ void scan_connect_thread(gpointer target_data, gpointer results_data) {
             break;
         
         //TODO: time used?
-        connect_diff = nm_time_ms_diff(connect_start);
+        //connect_diff = nm_time_ms_diff(connect_start);
 
     }
 

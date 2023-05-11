@@ -1,6 +1,8 @@
 #ifndef NETWORK_MATES_NM_COMMON_H
 #define NETWORK_MATES_NM_COMMON_H
 
+#include <arpa/inet.h>
+#include <linux/if_packet.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -11,6 +13,7 @@
 
 #include <glib-2.0/glib.h>
 #include "log.h"
+#include "nm-vendordb.h"
 
 #define NM_APP_CLI_NAME "nmlite"
 
@@ -71,5 +74,9 @@ void       *nm_table_get_num(nmtable *table, uint32_t num);
 void        nm_table_set_num(nmtable *table, uint32_t num, void *data);
 void        nm_table_free(nmtable *table);
 
+void        nm_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len);
+void        nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll);
+bool        nm_validate_hw_address(char *address, int real_address);
+void        nm_update_hw_vendor(char *hw_addr, int size);
 
 #endif //NETWORK_MATES_NM_COMMON_H

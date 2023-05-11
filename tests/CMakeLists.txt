@@ -5,7 +5,9 @@ set(COMMON_FILES    munit.h munit.c
                     ${SOURCE_BASE}/log.h
                     ${SOURCE_BASE}/log.c
                     ${SOURCE_BASE}/nm-common.h
-                    ${SOURCE_BASE}/nm-common.c)
+                    ${SOURCE_BASE}/nm-common.c
+                    ${SOURCE_BASE}/nm-vendordb.h
+                    ${SOURCE_BASE}/nm-vendordb.c)
 
 #file(GLOB SOURCE_FILES ${SOURCE_BASE}/nm-host.c ${SOURCE_BASE}/nm-scan.c ${SOURCE_BASE}/nm-proto.c
 #        ${SOURCE_BASE}/nm-common.c ${SOURCE_BASE}/nm-vendordb.c)

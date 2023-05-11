@@ -218,10 +218,9 @@ MunitResult test_list_all(MUNIT_ARGS) {
     nmlist *list2 = nm_list_add(NULL, str2);
     munit_assert_int(nm_list_len(list2), ==, 1);
 
-    nmlist *tmp;
-    tmp = nm_list_add(list2, strdup("Other String 2"));
-    tmp = nm_list_add(list2, strdup("Other String 3"));
-    tmp = nm_list_add(list2, strdup("Other String 4"));
+    nm_list_add(list2, strdup("Other String 2"));
+    nm_list_add(list2, strdup("Other String 3"));
+    nm_list_add(list2, strdup("Other String 4"));
     munit_assert_int(nm_list_len(list2), ==, 4);
     munit_assert_string_equal(list2->data, str2);
 

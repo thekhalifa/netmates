@@ -225,3 +225,72 @@ void nm_table_set_num(nmtable *table, uint32_t num, void *data) {
 void nm_table_free(nmtable *table) {
     g_hash_table_destroy(table);
 }
+
+void nm_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len) {
+    
+    struct in_addr addr;
+    addr.s_addr = ip_addr;
+    inet_ntop(AF_INET, &addr, ip_buffer, ip_len);
+    
+}
+
+void nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll) {
+    if(sa_ll == NULL)
+        return;
+
+    int len = 0;
+    for(int i=0; i < sa_ll->sll_halen && (len + 3) < buff_len; i++)
+        len += sprintf(&buff[len], "%02x%s", sa_ll->sll_addr[i], i + 1 < sa_ll->sll_halen ? ":" : "");
+
+}
+
+bool nm_validate_hw_address(char *address, int real_address) {
+    if(address == NULL || strlen(address) != 17)
+        return false;
+
+    //ab:bc:cd:de:ef:ff
+    uint32_t segment[6];
+    char buffer[64];
+    int num_tokens = sscanf(address, "%2x:%2x:%2x:%2x:%2x:%2x%s",
+                            &segment[0], &segment[1], &segment[2], &segment[3], &segment[4], &segment[5], buffer);
+    if(num_tokens != 6)
+        return false;
+    for(int i=0; i<6; i++){
+        if((segment[i] & 0xFFFFFF00) != 0)
+            return false;
+    }
+    if(real_address){
+        int count_zeros = 0;
+        for(int i=0; i<6; i++){
+            if(segment[i] == 0)
+                count_zeros++;
+        }
+        if(count_zeros > 3)
+            return false;
+    }
+    return true;
+}
+
+
+void nm_update_hw_vendor(char *hw_addr, int size) {
+    if(hw_addr == NULL || strlen(hw_addr) == 0)
+        return;
+
+    size_t len = strlen(hw_addr);
+    size_t free_space = size - len - 1;
+    if(free_space < 12)
+        return;
+
+    int tokens;
+    char addr_buffer[32];
+    tokens = sscanf(hw_addr, "%c%c:%c%c:%c%c:%*s", &addr_buffer[0], &addr_buffer[1],
+                            &addr_buffer[2], &addr_buffer[3], &addr_buffer[4], &addr_buffer[5]);
+    addr_buffer[6] = 0;
+    if(tokens != 6 || strlen(addr_buffer) != 6)
+        return;
+
+    const char *vendor_org = vendor_db_query(addr_buffer);
+    if(vendor_org != NULL)
+        snprintf(hw_addr+len, free_space, " [%s]", vendor_org);
+}
+

@@ -14,7 +14,6 @@
 
 #include "nm-common.h"
 #include "nm-host.h"
-#include "nm-vendordb.h"
 
 
 
@@ -142,9 +141,9 @@ int             scan_util_get_sock_error(int sd);
 int             scan_util_get_sock_info(int sd);
 bool            scan_util_calc_subnet_range(const char *ip, const char *netmask, scan_range *range);
 void            scan_result_destroy(scan_result *result);
-void            scan_util_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len);
-void            scan_util_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll);
-bool            scan_util_validate_hw_address(char *address, int real_address);
+// void            scan_util_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len);
+// void            scan_util_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll);
+// bool            scan_util_validate_hw_address(char *address, int real_address);
 
 
 /* local info gathering */
