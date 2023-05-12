@@ -15,10 +15,7 @@ static scan_state scan = {
         .opt_subnet_timeout_ms = 10000,
         .opt_poll_thread_work_us = 10000,
         .opt_max_hosts = 0,
-        .opt_subnet_offset = 0,
-        .event_cb = NULL,
-        .hosts = 0,
-        .localhost = 0
+        .opt_subnet_offset = 0
 };
 
 // // 5357/tcp open  wsdapi
@@ -63,6 +60,8 @@ static const scan_port scan_port_list[] = {
         .device_type = HOST_TYPE_SMART_TV},
     {.port = 22, .service = "ssh", .protocol = SCAN_PROTO_TCP, .required = 1,
         .device_type = HOST_TYPE_PC},
+    {.port = 5000, .service = "upnp-root", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_UNKNOWN},
     {.port = 6668, .service = "tuya", .protocol = SCAN_PROTO_TCP, .required = 0,
         .device_type = HOST_TYPE_SMART_DEVICE},
     {.port = 5353, .service = "mdns", .protocol = SCAN_PROTO_TCP, .required = 0,
@@ -79,11 +78,12 @@ static const scan_port scan_port_list[] = {
 
 
 static const scan_listen_port scan_listen_list[] = {
-        {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
-                .port.device_type = HOST_TYPE_UNKNOWN, //TODO: Fix me after checking SSDP
-                .min_time = 5000, .max_time = 30000, .bind_port = 0,
-                .mc_join = 1, .mc_ip = "239.255.255.250",
-                .query_cb = scan_proto_ssdp_query, .response_cb = scan_proto_ssdp_response},
+    {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
+        .port.device_type = HOST_TYPE_UNKNOWN, //TODO: Fix me after checking SSDP
+        .min_time = 1000, .max_time = 5000, .bind_port = 0,
+        .mc_join = 1, .mc_ip = "239.255.255.250",
+        .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
+    },
 /*        {.port.port = 6667, .port.service = "tuya", .port.required = 1,
                 .port.device_type = HOST_TYPE_SMART_DEVICE,
                 .min_time = 5000, .max_time = 25000, .bind_port = 6667},
@@ -135,72 +135,6 @@ bool scan_util_is_running(){
     return false;
 }
 
-// void scan_util_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len){
-//     struct in_addr addr;
-//     addr.s_addr = ip_addr;
-// 
-//     inet_ntop(AF_INET, &addr, ip_buffer, ip_len);
-// 
-// }
-// 
-// void scan_util_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll){
-//     if(sa_ll == NULL)
-//         return;
-// 
-//     int len = 0;
-//     for(int i=0; i < sa_ll->sll_halen && (len + 3) < buff_len; i++)
-//         len += sprintf(&buff[len], "%02x%s", sa_ll->sll_addr[i], i + 1 < sa_ll->sll_halen ? ":" : "");
-// 
-// }
-// 
-// bool scan_util_validate_hw_address(char *address, int real_address) {
-//     if(address == NULL || strlen(address) != 17)
-//         return false;
-// 
-//     //ab:bc:cd:de:ef:ff
-//     uint32_t segment[6];
-//     char buffer[64];
-//     int num_tokens = sscanf(address, "%2x:%2x:%2x:%2x:%2x:%2x%s",
-//                             &segment[0], &segment[1], &segment[2], &segment[3], &segment[4], &segment[5], buffer);
-//     if(num_tokens != 6)
-//         return false;
-//     for(int i=0; i<6; i++){
-//         if((segment[i] & 0xFFFFFF00) != 0)
-//             return false;
-//     }
-//     if(real_address){
-//         int count_zeros = 0;
-//         for(int i=0; i<6; i++){
-//             if(segment[i] == 0)
-//                 count_zeros++;
-//         }
-//         if(count_zeros > 3)
-//             return false;
-//     }
-//     return true;
-// }
-
-// void scan_util_update_hw_vendor(char *hw_addr, int size) {
-//     if(hw_addr == NULL || strlen(hw_addr) == 0)
-//         return;
-// 
-//     size_t len = strlen(hw_addr);
-//     size_t free_space = size - len - 1;
-//     if(free_space < 12)
-//         return;
-// 
-//     int tokens;
-//     char addr_buffer[32];
-//     tokens = sscanf(hw_addr, "%c%c:%c%c:%c%c:%*s", &addr_buffer[0], &addr_buffer[1],
-//                             &addr_buffer[2], &addr_buffer[3], &addr_buffer[4], &addr_buffer[5]);
-//     addr_buffer[6] = 0;
-//     if(tokens != 6 || strlen(addr_buffer) != 6)
-//         return;
-// 
-//     const char *vendor_org = vendor_db_query(addr_buffer);
-//     if(vendor_org != NULL)
-//         snprintf(hw_addr+len, free_space, " [%s]", vendor_org);
-// }
 
 bool scan_util_addr_seen(const in_addr_t target, const in_addr_t *list, const int list_len){
     for(int i = 0; i < list_len; i++){
@@ -217,17 +151,6 @@ int scan_util_get_sock_error(int sd){
         return so_error;
     else{
         log_warn("scan_util_get_sock_error: error getting socket error");
-        return -1;
-    }
-}
-
-int scan_util_get_sock_info(int sd){
-    struct tcp_info info;
-    socklen_t len = sizeof (info);
-    if(!getsockopt(sd, IPPROTO_TCP, TCP_INFO, &info, &len))
-        return info.tcpi_state;
-    else{
-        log_warn("scan_util_get_sock_info: error getting socket info");
         return -1;
     }
 }
@@ -284,7 +207,7 @@ void scan_result_destroy(scan_result *result) {
     if(result->hostname)
         free(result->hostname);
     if(result->services){
-        g_list_free(result->services);
+        nm_list_free(result->services, true);
     }
     free(result);
 
@@ -308,217 +231,11 @@ void scan_print_mates(nmlist *hosts) {
 
 }
 
-int scan_list_arp_hosts(){
-    log_trace("scan_list_arp_hosts: called");
-    
-    FILE *arp_fd;
-    nm_host *entry;
-
-    char line[NL_GEN_BUFF], ip_buffer[NM_MAX_BUFF_IP], host_buffer[NM_MAX_BUFF_HOST];
-    char hw_addr[NM_MAX_BUFF_HWADDR];
-    int num_tokens, type, flags, num_lines, num_found = 0;
-
-    if ((arp_fd = fopen("/proc/net/arp", "r")) == NULL) {
-        perror("Error opening arp table");
-        return 0;
-    }
-    // ignore header
-    if(fgets(line, sizeof(line), arp_fd) == NULL){
-        perror("Nothing in arp table files");
-        return 0;
-    }
-
-    //entries = nm_host_array_new();
-    for (num_lines = 0; fgets(line, sizeof(line), arp_fd); num_lines++) {
-        if(scan.quit_now)
-            return 0;
-
-        num_tokens = sscanf(line, "%s 0x%x 0x%x %99s %*99s* %*99s\n", ip_buffer, &type, &flags, hw_addr);
-        if (num_tokens < 4)
-            break;
-        if(!nm_validate_hw_address(hw_addr, 1))
-            continue;
-
-        if(!scan.opt_skip_resolve)
-            nm_update_hw_vendor(hw_addr, sizeof(hw_addr));
-
-        entry = nm_host_init(HOST_TYPE_UNKNOWN);
-        entry->ip_addr = inet_addr(ip_buffer);
-        if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buffer, sizeof(host_buffer)))
-            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, host_buffer);
-        else
-            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, NULL);
-
-        scan.hosts = nm_host_merge_in_list(scan.hosts, entry);
-        num_found++;
-    }
-    fclose(arp_fd);
-    
-    log_trace("scan_list_arp_hosts: ending");
-    return num_found;
-}
-
-
-int scan_list_gateways() {
-    log_trace("scan_list_gateways: called");
-    
-    int num_ip4_found = 0, num_ip6_found = 0, tokens;
-    char line[NL_GEN_BUFF], ip_buffer[NM_MAX_BUFF_IP], host_buffer[NM_MAX_BUFF_HOST];
-    char ip6_buffer[NM_MAX_BUFF_IP6], iface[64], *token;
-    FILE *fp;
-    nm_host *gw_host = NULL, *gw_host6;
-    struct in_addr dest, gateway;
-    struct in6_addr gateway6;
-
-    /* read IPv4 route file first */
-    if ((fp = fopen("/proc/net/route", "r")) == NULL) {
-        log_info("Error opening route table");
-        return 0;
-    }
-    // found a header?
-    if (fgets(line, sizeof(line), fp) != NULL) {
-        for (; fgets(line, sizeof(line), fp);) {
-            tokens = sscanf(line, "%s %X %X %*i %*i %*i %*i %*x %*i %*i %*i \n",
-                            iface, &dest.s_addr, &gateway.s_addr);
-            if (tokens < 3)
-                break;
-            if(dest.s_addr == 0 && gateway.s_addr != 0){
-                gw_host = nm_host_init(HOST_TYPE_ROUTER);
-                inet_ntop(AF_INET, &gateway.s_addr, ip_buffer, sizeof(ip_buffer));
-                if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buffer, sizeof(host_buffer)))
-                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, host_buffer);
-                else
-                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, NULL);
-
-                scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host);
-                num_ip4_found++;
-            }
-        }
-//     }else{
-        //log_info("No header in route table");
-    }
-    fclose(fp);
-
-    /* read IPv6 route file next */
-    if ((fp = fopen("/proc/net/ipv6_route", "r")) == NULL) {
-        log_info("Error opening ipv6_route table");
-        return num_ip4_found;
-    }
-    //no header, lines directly
-    for (; fgets(line, sizeof(line), fp);) {
-        token = nm_string_extract_token(line, ' ', 4);
-        if(strlen(token) < 32)
-            continue;
-
-        for(int i=0; i<16; i++){
-            sscanf(&token[i*2], "%2hhx", &gateway6.__in6_u.__u6_addr8[i]);
-        }
-
-        if(gateway6.__in6_u.__u6_addr32[0] != 0 || gateway6.__in6_u.__u6_addr32[1] != 0 ||
-                gateway6.__in6_u.__u6_addr32[2] != 0 || gateway6.__in6_u.__u6_addr32[3] != 0){
-
-            gw_host6 = nm_host_init(HOST_TYPE_ROUTER);
-            /* if there is only 1 ipv4 gateway, likely all ipv6 addresses belong to it */
-//             if(num_ip4_found != 1)
-//                 gw_host6 = gw_host;
-//             else
-//                 gw_host6 = nm_host_init(HOST_TYPE_ROUTER);
-
-            inet_ntop(AF_INET6, &gateway6.__in6_u, ip6_buffer, sizeof(ip6_buffer));
-            // log_trace("Printing IPv6 %s", ip6_buffer);
-
-            if(!scan.opt_skip_resolve && scan_resolve_hostname6(ip6_buffer, host_buffer, sizeof(host_buffer)))
-                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, host_buffer);
-            else
-                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, NULL);
-
-            scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host6);
-
-            num_ip6_found++;
-        }
-    }
-    fclose(fp);
-
-    log_trace("scan_list_gateways: ending with ip4: %i, ip6: %i", num_ip4_found, num_ip6_found);
-    return num_ip4_found + num_ip6_found;
-}
-
-bool scan_list_localhost() {
-    int family;
-    struct ifaddrs *if_addr, *ifa;
-    char ip_buffer[NM_MAX_BUFF_IP], host_buff[NM_MAX_BUFF_HOST];
-    char ip6_buffer[NM_MAX_BUFF_IP6], hwaddr_buffer[NM_MAX_BUFF_HWADDR];
-
-    assert(scan.localhost == NULL);
-    scan.localhost = nm_host_init(HOST_TYPE_LOCALHOST);
-
-    if (getifaddrs(&if_addr) == -1) {
-        log_warn("Could not get getifaddrs");
-        return false;
-    }
-    for (ifa = if_addr; ifa != NULL; ifa = ifa->ifa_next) {
-        //skip loopback and anything not connected (e.g cable)
-        if (ifa->ifa_addr == NULL || (ifa->ifa_flags & IFF_LOOPBACK) || !(ifa->ifa_flags & IFF_UP) ||
-            !(ifa->ifa_flags & IFF_RUNNING)) {
-            continue;
-        }
-        family = ifa->ifa_addr->sa_family;
-        if (family == AF_INET) {
-            scan.localhost->ip_addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
-            inet_ntop(AF_INET, &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr, ip_buffer, sizeof(ip_buffer));
-//            if(strlen(entry->ip) == 0)
-//                strncpy(entry->ip, buff, sizeof(entry->ip));
-//            else
-//                entry->list_ip = nm_host_other_add_unique(entry->list_ip, buff);
-
-            //update ip and hostname, where hostname is host or ip, whichever we have
-            if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buff, sizeof(host_buff)))
-                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, host_buff);
-            else
-                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, NULL);
-            
-//            if(strlen(entry->hostname) == 0){
-//                strncpy(entry->hostname, host_buff, sizeof(entry->hostname));
-//            }else if(strcmp(buff, entry->hostname) != 0){
-//                printf("Conflict in hostname, tracking %s but found %s", entry->hostname, buff);
-//            }
-            if(ifa->ifa_netmask != NULL){
-                struct sockaddr_in *nmv = (struct sockaddr_in*)ifa->ifa_netmask;
-                nm_host_set_attributes(scan.localhost, NULL, NULL, inet_ntoa(nmv->sin_addr), NULL, NULL);
-//                strncpy(entry->netmask, inet_ntoa(nmv->sin_addr), sizeof(entry->netmask));
-            }
-
-        } else if (family == AF_INET6) {
-            inet_ntop(AF_INET6, &((struct sockaddr_in6 *) ifa->ifa_addr)->sin6_addr, ip6_buffer, sizeof(ip6_buffer));
-            nm_host_set_attributes(scan.localhost, NULL, ip6_buffer, NULL, NULL, NULL);
-//            if(strlen(entry->ip6) == 0)
-//                strncpy(entry->ip6, buff, sizeof(entry->ip6));
-//            else
-//                entry->list_ip6 = nm_host_other_add_unique(entry->list_ip6, buff);
-        } else if (family == AF_PACKET) {
-            nm_format_hw_address(hwaddr_buffer, sizeof(hwaddr_buffer), (struct sockaddr_ll *) ifa->ifa_addr);
-            nm_update_hw_vendor(hwaddr_buffer, sizeof(hwaddr_buffer));
-            nm_host_set_attributes(scan.localhost, NULL, NULL, NULL, hwaddr_buffer, NULL);
-//            if(!strlen(entry->hw_addr))
-//                strncpy(entry->hw_addr, buff, sizeof(entry->hw_addr));
-//            else
-//                entry->list_hw_addr = nm_host_other_add_unique(entry->list_hw_addr, buff);
-        }
-    }
-    freeifaddrs(if_addr);
-    
-    scan.hosts = nm_host_merge_in_list(scan.hosts, scan.localhost);
-    
-    return true;
-
-}
-
 
 int scan_resolve_hostname_from_inaddr(uint32_t ip_addr, char *hostname_buffer, size_t buffer_size) {
     assert(ip_addr != 0);
     assert(hostname_buffer != NULL);
 
-    char ip_str[NM_MAX_BUFF_IP];
     char host[NM_MAX_BUFF_HOST];
     char service[32];
     struct sockaddr_in addr;
@@ -578,6 +295,228 @@ int scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size) 
 }
 
 
+bool probe_ssdp_query(int sd, void *lp){
+    assert(sd > 0);
+
+    log_trace("probe_ssdp_query: sending query");
+    
+    struct sockaddr_in send_addr;
+    send_addr.sin_addr.s_addr = inet_addr(proto_ssdp.send_ip);
+    send_addr.sin_family = AF_INET;
+    send_addr.sin_port = htons(1900);
+    ssize_t bytes_sent = sendto(sd, proto_ssdp.query_message, strlen(proto_ssdp.query_message), 0,
+                                 (struct sockaddr*)&send_addr, sizeof(send_addr));
+    if(bytes_sent < 0){
+        log_debug("scan_proto_ssdp_query: could not send query, err %i, %s", errno, strerror(errno));
+        return false;
+    }
+    log_trace("probe_ssdp_query: query with %li bytes", bytes_sent);
+    log_trace("\n\n%s\n\n", proto_ssdp.query_message);
+    return true;
+}
+
+void probe_ssdp_process(scan_result *result, char *in_buffer, ssize_t in_size, char *key, int num_lines) {
+    char line[256], key_token[64], value_token[256];
+    service_record *record;
+    int num_records = sizeof(ssdp_service_map) / sizeof(ssdp_service_map[0]);
+
+    log_trace("probe_ssdp_process: processing response");
+
+    for(int i=0; i<num_lines; i++){
+        nm_string_copy_line(in_buffer, in_size, i, line, sizeof(line));
+        key_token[0] = 0; value_token[0] = 0;
+        sscanf(line, "%[a-zA-Z0-9:-] %s", key_token, value_token);
+//        log_debug("probe_ssdp_process: scanf of line '%s' gives key '%s' and value '%s'",
+//                    line, key_token, value_token);
+        if(strlen(key_token) && !strcmp(key_token, key)){
+            for(int j=0; j < num_records; j++){
+                if(strstr(value_token, ssdp_service_map[j].signature)){
+//                    log_debug("probe_ssdp_process: found host type %i and service %s",
+//                            ssdp_service_map[j].host_type, ssdp_service_map[j].service_name);
+                    if(ssdp_service_map[j].service_name)
+                        result->services = nm_list_add(result->services, strdup(ssdp_service_map[j].service_name));
+                    if(ssdp_service_map[j].host_type != HOST_TYPE_UNKNOWN)
+                        result->host_type = ssdp_service_map[j].host_type;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+}
+
+bool probe_ssdp_response(scan_result *result, char *in_buffer, ssize_t in_size){
+    assert(result != NULL);
+    assert(in_buffer != NULL);
+
+    char buffer[NM_GEN_BUFFSIZE];
+    snprintf(buffer, sizeof(buffer), "%s", in_buffer);
+    
+    log_trace("probe_ssdp_response: response with %li bytes", in_size);
+    log_trace("--\n%s", buffer);
+    
+    char line[256];
+    char *key_type = NULL;
+
+    int num_lines = nm_string_count_lines(in_buffer, in_size);
+    if(num_lines < 5){
+        log_debug("scan_proto_ssdp_response - not enough lines to begin checking, skipping");
+        return false;
+    }
+
+    nm_string_copy_line(in_buffer, in_size, 0, line, sizeof(line));
+    //log_debug("scan_proto_ssdp_response - start lines: %s", line);
+    if(!strncmp(line, proto_ssdp.header_start_notify, strlen(proto_ssdp.header_start_notify))){
+        key_type = proto_ssdp.key_notify_type;
+    }else if(!strncmp(line, proto_ssdp.header_start_response, strlen(proto_ssdp.header_start_response))){
+        key_type = proto_ssdp.key_search_type;
+    }
+    if(key_type){
+        log_debug("scan_proto_ssdp_response - looking for key: %s", key_type);
+        probe_ssdp_process(result, in_buffer, in_size, key_type, num_lines);
+    }
+
+    return true;
+}
+
+
+int probe_connect_tcp(const char *thread_id, scan_result *result, 
+                          scan_port *port_def, struct in_addr ip_addr) {
+
+    int sd, cnct_ret, poll_ret, so_error;
+    struct sockaddr_in target_addr;
+    struct pollfd poll_arg;
+
+    sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_IP);
+    if(sd < 0){
+        log_debug("%s\t socket errno: %i, errdesc: %s", thread_id, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        return -EIO;
+    }
+
+    target_addr.sin_family = AF_INET;
+    target_addr.sin_addr = ip_addr;
+    target_addr.sin_port = htons(port_def->port);
+
+    cnct_ret = connect(sd, (struct sockaddr*)&target_addr, sizeof(target_addr));
+    if(cnct_ret != -1 || errno != EINPROGRESS){
+        log_debug("%s\t connect unexpected error on port %i, errno: %i, errdesc: %s\n", thread_id, port_def->port,
+                    errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        close(sd);
+        return -EIO;
+    }
+    
+    poll_arg.fd = sd;
+    /* include err event as open connect_ports can be too quick */
+    poll_arg.events = POLL_IN | POLL_OUT | POLL_ERR;
+    poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
+
+    so_error = scan_util_get_sock_error(sd);
+
+    /* check poll result and socket state */
+    if(poll_ret > 0){
+        //poll has connect() success or error is connection refused, both mean host is live
+        if(so_error == 0 || so_error == ECONNREFUSED){
+            result->response = SCAN_HSTATE_LIVE;
+            if(so_error == 0) {
+                result->host_type = port_def->device_type;
+                result->services = nm_list_add(result->services, strdup(port_def->service));
+                log_trace("%s host found, connect port %hu open", 
+                          thread_id, port_def->port);
+            }else {
+                log_trace("%s host found, connect port %hu passive",
+                          thread_id, port_def->port);
+            }
+        }
+    }else if(poll_ret == 0){
+        //poll timed out
+        so_error = scan_util_get_sock_error(sd);
+        //-- log_trace("%s\t poll - timeout, port %i, sockerrno %i, errdesc: %s",
+        //--          thread_id, port_def->port, so_error, strerror(so_error));
+    }else{
+        //poll error
+        //-- log_trace("%s\t poll - error with port %i, error errno: %i, errdesc: %s", 
+        //--         thread_id, port_def->port, errno, strerror(errno));
+    }
+    
+    close(sd);
+    return 0;
+}
+
+
+int probe_sendrecv_udp(const char *thread_id, scan_result *result, 
+                          scan_port *port_def, struct in_addr ip_addr) {
+
+    int sd, send_ret, recv_ret, poll_ret;
+    struct sockaddr_in target_addr;
+    socklen_t addr_size;
+    struct pollfd poll_arg;
+    char recvbuffer[NM_GEN_BUFFSIZE];
+    recvbuffer[0] = 0;
+    
+    sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_IP);
+    if(sd < 0){
+        log_debug("%s\t socket errno: %i, errdesc: %s", thread_id, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        return -EIO;
+    }
+
+    target_addr.sin_family = AF_INET;
+    target_addr.sin_addr = ip_addr;
+    target_addr.sin_port = htons(port_def->port);
+    addr_size = sizeof(target_addr);
+
+    // send the buffer
+    send_ret = sendto(sd, port_def->query_payload.buffer, port_def->query_payload.length-1, 0,
+                      (struct sockaddr*)&target_addr, sizeof(target_addr));
+    
+    if(send_ret == -1){
+        log_trace("%s\t sendto unexpected error on port %i, errno: %i, errdesc: %s\n", 
+                  thread_id, port_def->port, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        close(sd);
+        return -EIO;
+    }
+    
+    
+    // request non-blocking response
+    recv_ret = recvfrom(sd, recvbuffer, sizeof(recvbuffer),
+                        0, (struct sockaddr*)&target_addr, &addr_size);
+    if(recv_ret == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
+        log_trace("%s\t recvfrom unexpected error on port %i, errno: %i, errdesc: %s\n", 
+                  thread_id, port_def->port, errno, strerror(errno));
+        result->response = SCAN_HSTATE_ERROR;
+        close(sd);
+        return -EIO;
+    }
+    
+    // wait for response
+    poll_arg.fd = sd;
+    /* include err event as open connect_ports can be too quick */
+    poll_arg.events = POLL_IN;
+    poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
+
+    /* check poll result and socket state */
+    if(poll_ret > 0 && poll_arg.revents & POLL_IN){
+        //poll has data from recvfrom
+        result->response = SCAN_HSTATE_LIVE;
+        result->host_type = port_def->device_type;
+        result->services = nm_list_add(result->services, strdup(port_def->service));
+        log_trace("%s host found, receive from port %hu", 
+                    thread_id, port_def->port);
+//     }else if(poll_ret == 0){    //poll timed out
+//         log_trace("%s\t poll-udp - timeout, port %i",
+//                   thread_id, port_def->port);
+//     }else{      //poll error
+//         log_trace("%s\t poll-udp - error with port %i, error errno: %i, errdesc: %s", 
+//                  thread_id, port_def->port, errno, strerror(errno));
+    }
+    
+    close(sd);
+    return 0;
+}
+
 void scan_process_result(scan_result *result, int *live_counter) {
     assert(result != NULL);
     assert(live_counter != NULL);
@@ -607,8 +546,6 @@ void scan_process_result(scan_result *result, int *live_counter) {
         
         scan.hosts = nm_host_merge_in_list(scan.hosts, host);
 
-        if(scan.event_cb)
-            scan.event_cb(SCAN_EVENT_UPDATE, host);
     }else if (result->response == SCAN_HSTATE_ERROR) {
         printf("  --> SCAN %s Error with [%s]\n", dir, inet_ntoa(result->target_addr));
     }
@@ -616,41 +553,8 @@ void scan_process_result(scan_result *result, int *live_counter) {
 }
 
 
-void scan_notify_start(void *callback){
-    log_debug("SCAN: Starting");
-    scan.running = 1;
-    if(callback != NULL)
-        ((scanner_callback)callback)(SCAN_EVENT_START, NULL);
-}
-
-void scan_notify_host_update(void *callback, nm_host *host){
-    if(callback != NULL)
-        ((scanner_callback)callback)(SCAN_EVENT_UPDATE, host);
-}
-
-void scan_notify_hosts(void *callback){
-    if(callback == NULL)
-        return;
-
-    nm_list_foreach(entry, scan.hosts)
-        ((scanner_callback) callback)(SCAN_EVENT_UPDATE, entry);
-    
-//     nm_host *entry;
-//     for(int i=0; i < scan.hosts->len; i++) {
-//         entry = nm_host_array_index(scan.hosts, i);
-//         ((scanner_callback) callback)(SCAN_EVENT_UPDATE, entry);
-//     }
-}
-
-void scan_notify_stop(void *callback){
-    log_debug("SCAN: Stop");
-    scan.running = 0;
-    if(callback != NULL)
-        ((scanner_callback)callback)(SCAN_EVENT_END, NULL);
-}
-
 gpointer scan_main_listen_thread(gpointer data){
-    log_debug("scan_main_listen_thread Starting...");
+    log_trace("scan_main_listen_thread starting");
     unsigned long start_time = nm_time_ms();
 
     if(scan.quit_now)
@@ -676,9 +580,7 @@ gpointer scan_main_listen_thread(gpointer data){
 
     // push work to the thread pool
     for(int i = 0; i < num_listen_ports; i++) {
-        if(scan.quit_now)
-            return false;
-
+        log_trace("scan_main_listen_thread, pushing work: %i", i);
         g_thread_pool_push(thread_pool, (gpointer)&scan_listen_list[i], &error);
         if(error != NULL){
             log_info("scan_main_listen_thread: error pushing entry %i \n", i);
@@ -687,65 +589,73 @@ gpointer scan_main_listen_thread(gpointer data){
     }
 
     //poll status of received results
+    log_trace("scan_main_listen_thread, polling results");
     scan_result *result;
     uint32_t unused_work, running_threads, returned_count;
     for(;;) {
         if(scan.quit_now)
-            return false;
+            return NULL;
 
         //check work done by the thread pool
         unused_work = g_thread_pool_unprocessed(thread_pool);
         running_threads = g_thread_pool_get_num_threads(thread_pool);
+//         log_trace("scan_main_listen_thread, unused_work: %i, running_threads: %i",
+//                   unused_work, running_threads);
         if(unused_work == 0 && running_threads == 0)
             break;
         //check if results are pending, process some
         while((result = g_async_queue_try_pop(results_queue))){
-            if(scan.quit_now)
-                return false;
             scan_process_result(result, &num_live);
             num_results++;
         }
+        //log_trace("scan_main_listen_thread, going to sleep: num_results: %i", num_results);
         usleep(scan.opt_poll_thread_work_us);
         if(nm_time_ms_diff(start_time) > scan_timeout_ms){
             log_info("scan_main_listen_thread: Subnet scan timeout reached %u ms \n", scan_timeout_ms);
             break;
         }
     }
+    running_threads = g_thread_pool_get_num_threads(thread_pool);
+    log_trace("scan_main_listen_thread, about to free pool: running_threads: %i", running_threads);
     g_thread_pool_free(thread_pool, false, true);
 
+    usleep(scan.opt_poll_thread_work_us * 10);
+    log_trace("scan_main_listen_thread final queue processing...");
     returned_count = g_async_queue_length(results_queue);
+    log_trace("scan_main_listen_thread       queue length: %i", returned_count);
     for(int i=0; i<returned_count; i++){
         if(scan.quit_now)
-            return false;
+            return NULL;
         result = g_async_queue_pop(results_queue);
         scan_process_result(result, &num_live);
         num_results++;
     }
 
-    log_info("scan_main_listen_thread: discovery summary: total ports %i found %i hosts in %lus]\n",
+    log_info("scan_main_listen_thread: discovery summary: total ports %i found %i results in %lus]\n",
               num_listen_ports, num_live, nm_time_ms_diff(start_time) / 1000);
 
     g_async_queue_unref(results_queue);
 
-    log_debug("scan_main_listen_thread: ending");
+    log_trace("scan_main_listen_thread: ending");
     return NULL;
 }
 
 void scan_listen_thread(gpointer target_data, gpointer results_data) {
-    log_debug("scan_listen_thread called");
+    log_trace("scan_listen_thread called");
 
     int sd, max_wait_time, min_wait_time, mc_loop;
     long int recv_ret, poll_ret, actual_size;
     unsigned long thread_start;
     char thread_signature[64];
-    char sender_ip_buffer[NM_MAX_BUFF_IP], hostname_buffer[NM_MAX_BUFF_HOST], recv_buffer[NL_LARGE_BUFF];
+    char sender_ip_buffer[NM_MAX_BUFF_IP6], hostname_buffer[NM_MAX_BUFF_HOST], recv_buffer[NM_LARGE_BUFFSIZE];
     uint16_t port_num, sender_port;
     socklen_t recv_addr_size;
     struct pollfd poll_arg;
-    struct sockaddr_in bind_addr, recv_addr;
+    struct sockaddr_in bind_addr;
+    struct sockaddr_in recv_addr;
     struct ip_mreqn mcast_membership;
 
-    nmtable *sender_results;
+    nmtable *response_ip_hostname = nm_table_new();
     scan_listen_port *listen_port;
     scan_result *result;
     GAsyncQueue *results_queue;
@@ -757,8 +667,6 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
     }
 
     //prepare results and listen port
-    //sender_results = scan_result_dict_new();
-    sender_results = nm_table_new();
     results_queue = results_data;
     listen_port = target_data;
     min_wait_time = listen_port->min_time;
@@ -781,16 +689,19 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
         mcast_membership.imr_multiaddr.s_addr = inet_addr(listen_port->mc_ip);
         if(setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                       &mcast_membership, sizeof(mcast_membership)) == -1){
-            log_debug("%s socket set option mc membership errno: %i, errdesc: %s", thread_signature, errno, strerror(errno));
+            log_warn("%s socket set option mc membership errno: %i, errdesc: %s", 
+                      thread_signature, errno, strerror(errno));
         }else{
-            log_debug("%s Will join membership of multicast %s", thread_signature, listen_port->mc_ip);
+            log_trace("%s Will join membership of multicast %s", thread_signature,
+                      listen_port->mc_ip);
         }
         mc_loop = 0;
         if(setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &mc_loop, sizeof(mc_loop)) == -1)
-            log_debug("%s socket set option mc loop errno: %i, errdesc: %s", thread_signature, errno, strerror(errno));
+            log_warn("%s socket set option mc loop errno: %i, errdesc: %s",
+                      thread_signature, errno, strerror(errno));
     }
 
-    log_debug("%s Binding to port %i", thread_signature, listen_port->bind_port);
+    log_trace("%s Binding to port %i", thread_signature, listen_port->bind_port);
     bind_addr.sin_family = AF_INET;
     bind_addr.sin_addr.s_addr = INADDR_ANY;
     bind_addr.sin_port = htons(listen_port->bind_port);
@@ -818,60 +729,66 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
         if(!scan_util_is_running())
             break;
 
-        //TODO: Poll first before recv;
-        memset(&recv_addr, 0, sizeof(recv_addr));
+        memset(&recv_addr, 0, sizeof(struct sockaddr_in));
         recv_addr_size = sizeof(recv_addr);
         recv_ret = recvfrom(sd, recv_buffer, sizeof(recv_buffer), 0,
                             (struct sockaddr*)&recv_addr, &recv_addr_size);
+        //--log_trace("%s\trecvfrom return: %i (%X), available size: %i, return addr size: %i", 
+        //--          thread_signature, recv_ret, recv_ret, (int)sizeof(recv_addr), recv_addr_size);
+        
         if(recv_ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)){
             poll_ret = poll(&poll_arg, 1, min_wait_time);
+            //-- log_trace("%s\tpoll return: %i (%X)", thread_signature, poll_ret, poll_ret);
             //on event or timeout, try reading again
             if(poll_ret > 0 || poll_ret == 0){
-                //TODO: do not mix the two conditions
-                //log_debug("%s Poll ready or timeout: %li, port %i, errno: %i, errdesc: %s",
-                //        thread_signature, poll_ret, port_num, errno, strerror(errno));
+                //TODO: do not mix the two conditions?
                 continue;
             }
             //else report the error
-            log_debug("%s Poll error on port %i, errno: %i, errdesc: %s", thread_signature, port_num, errno, strerror(errno));
-        }else{
-            //now check the data received
-            inet_ntop(AF_INET, &recv_addr.sin_addr, sender_ip_buffer, sizeof(sender_ip_buffer));
-            sender_port = ntohs(recv_addr.sin_port);
-            actual_size = recv_ret < sizeof(recv_buffer) ? recv_ret : (long)sizeof(recv_buffer);
-            log_debug("%s Data on port %i, size %li from %s:%hu", thread_signature, port_num, actual_size, sender_ip_buffer, sender_port);
-
-            //result = scan_result_dict_get(sender_results, recv_addr.sin_addr.s_addr);
-            result = nm_table_get_num(sender_results, recv_addr.sin_addr.s_addr);
-            if(result == NULL){
-                result = scan_result_init(SCAN_DIR_LISTEN, SCAN_HSTATE_LIVE, recv_addr.sin_addr.s_addr, port_num);
-                result->host_type = listen_port->port.device_type;
-                //scan_result_dict_set(sender_results, recv_addr.sin_addr.s_addr, result);
-                nm_table_set_num(sender_results, recv_addr.sin_addr.s_addr, result);
-            }
-            //port-specific response processing
-            if(listen_port->response_cb != NULL){
-                log_debug("%s Executing response callback", thread_signature);
-                if(!(listen_port->response_cb)(result, recv_buffer, actual_size))
-                    log_debug("%s Error with response callback", thread_signature);
-            }
+            log_trace("%s Poll error on port %i, errno: %i, errdesc: %s",
+                      thread_signature, port_num, errno, strerror(errno));
+        }else if(recv_ret == -1) {
+            //else report the error
+            log_trace("%s recvfrom unexpected error on port %i, errno: %i, errdesc: %s",
+                      thread_signature, port_num, errno, strerror(errno));
+            break;
         }
-    }
-
-    if(!scan_util_is_running())
-        return;
-
-    //loop over dict and resolve hostnames;
-    GHashTableIter iter;
-    gpointer key, value;
-    g_hash_table_iter_init (&iter, sender_results);
-    while (g_hash_table_iter_next (&iter, &key, &value)){
-        result = value;
-        if(!scan.opt_skip_resolve && scan_resolve_hostname_from_inaddr(result->target_addr.s_addr,
-                                                                       hostname_buffer, sizeof(hostname_buffer)))
+        
+        //now check the data received
+        inet_ntop(AF_INET, &recv_addr.sin_addr, sender_ip_buffer, sizeof(sender_ip_buffer));
+        sender_port = ntohs(recv_addr.sin_port);
+        actual_size = recv_ret < sizeof(recv_buffer) ? recv_ret : (long)sizeof(recv_buffer);
+        log_debug("%s data on port %i, size %li from %s:%hu",
+                  thread_signature, port_num, actual_size, sender_ip_buffer, sender_port);
+        
+        result = malloc(sizeof(scan_result));
+        memset(result, 0, sizeof(scan_result));
+        result->target_addr = recv_addr.sin_addr;
+        result->response = SCAN_HSTATE_LIVE;
+        result->direction = SCAN_DIR_LISTEN;
+        result->host_type = listen_port->port.device_type;
+        
+        //resolve hostname if it's not yet, else leave it empty
+        if(!scan.opt_skip_resolve && 
+            nm_table_get_num(response_ip_hostname, result->target_addr.s_addr) == NULL) {
+            
+            scan_resolve_hostname_from_inaddr(result->target_addr.s_addr,
+                                                hostname_buffer, sizeof(hostname_buffer));
             result->hostname = strdup(hostname_buffer);
-        g_async_queue_push(results_queue, value);
+            nm_table_set_num(response_ip_hostname, result->target_addr.s_addr, result->hostname);
+        }
+        //port-specific response processing
+        if(listen_port->response_cb != NULL){
+            log_trace("%s Executing response callback", thread_signature);
+            if(!(listen_port->response_cb)(result, recv_buffer, actual_size))
+                log_trace("%s Error with response callback", thread_signature);
+        }
+        
+        g_async_queue_push(results_queue, result);
     }
+    
+    nm_table_free(response_ip_hostname);
+
     log_debug("%s End listen thread [time: %lu ms]!", thread_signature, nm_time_ms_diff(thread_start));
 }
 
@@ -919,11 +836,12 @@ gpointer scan_main_connect_thread(gpointer data){
     // push work to the thread pool
     for(curr_num = range.start_num; curr_num <= range.stop_num; curr_num++){
         if(scan.quit_now)
-            return false;
+            return NULL;
 
         curr_addr = ntohl(curr_num);
-        if(curr_addr == scan.localhost->ip_addr)
-            continue;
+        // stop skipping localhost and scan it too
+//         if(curr_addr == scan.localhost->ip_addr)
+//             continue;
 
         g_thread_pool_push(thread_pool, (gpointer)(intptr_t)curr_addr, &error);
         if(error != NULL){
@@ -980,145 +898,6 @@ gpointer scan_main_connect_thread(gpointer data){
 
 }
 
-int scan_probe_send_tcp(const char *thread_id, scan_result *result, 
-                          scan_port *port_def, struct in_addr ip_addr) {
-
-    int sd, cnct_ret, poll_ret, so_error;
-    struct sockaddr_in target_addr;
-    struct pollfd poll_arg;
-
-    sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_IP);
-    if(sd < 0){
-        log_debug("%s\t socket errno: %i, errdesc: %s", thread_id, errno, strerror(errno));
-        result->response = SCAN_HSTATE_ERROR;
-        return -EIO;
-    }
-
-    target_addr.sin_family = AF_INET;
-    target_addr.sin_addr = ip_addr;
-    target_addr.sin_port = htons(port_def->port);
-
-    cnct_ret = connect(sd, (struct sockaddr*)&target_addr, sizeof(target_addr));
-    if(cnct_ret != -1 || errno != EINPROGRESS){
-        log_debug("%s\t connect unexpected error on port %i, errno: %i, errdesc: %s\n", thread_id, port_def->port,
-                    errno, strerror(errno));
-        result->response = SCAN_HSTATE_ERROR;
-        close(sd);
-        return -EIO;
-    }
-    
-    poll_arg.fd = sd;
-    /* include err event as open connect_ports can be too quick */
-    poll_arg.events = POLL_IN | POLL_OUT | POLL_ERR;
-    poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
-
-    so_error = scan_util_get_sock_error(sd);
-    //so_state = scan_util_get_sock_info(sd);
-    //log_debug("%s\t connect after_poll - [%lu ms] poll_revents %hu, socket_state: %i, socket_error errno: %i, errdesc: %s",
-    //thread_id, connect_diff, poll_arg.revents, so_state, so_error, strerror(so_error));
-
-    /* check poll result and socket state */
-    if(poll_ret > 0){
-        //poll has connect() success or error is connection refused, both mean host is live
-        if(so_error == 0 || so_error == ECONNREFUSED){
-            result->response = SCAN_HSTATE_LIVE;
-            if(so_error == 0) {
-                result->host_type = port_def->device_type;
-                result->services = nm_list_add(result->services, port_def->service);
-                log_trace("%s host found, connect port %hu open", 
-                          thread_id, port_def->port);
-            }else {
-                log_trace("%s host found, connect port %hu passive",
-                          thread_id, port_def->port);
-            }
-        }
-    }else if(poll_ret == 0){
-        //poll timed out
-        so_error = scan_util_get_sock_error(sd);
-        log_trace("%s\t poll - timeout, port %i, sockerrno %i, errdesc: %s",
-                  thread_id, port_def->port, so_error, strerror(so_error));
-    }else{
-        //poll error
-        log_trace("%s\t poll - error with port %i, error errno: %i, errdesc: %s", 
-                 thread_id, port_def->port, errno, strerror(errno));
-    }
-    
-    close(sd);
-    return 0;
-}
-
-
-int scan_probe_send_udp(const char *thread_id, scan_result *result, 
-                          scan_port *port_def, struct in_addr ip_addr) {
-
-    int sd, send_ret, recv_ret, poll_ret;
-    struct sockaddr_in target_addr;
-    socklen_t addr_size;
-    struct pollfd poll_arg;
-    char recvbuffer[NL_GEN_BUFF];
-    recvbuffer[0] = 0;
-    
-    sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_IP);
-    if(sd < 0){
-        log_debug("%s\t socket errno: %i, errdesc: %s", thread_id, errno, strerror(errno));
-        result->response = SCAN_HSTATE_ERROR;
-        return -EIO;
-    }
-
-    target_addr.sin_family = AF_INET;
-    target_addr.sin_addr = ip_addr;
-    target_addr.sin_port = htons(port_def->port);
-    addr_size = sizeof(target_addr);
-
-    // send the buffer
-    send_ret = sendto(sd, port_def->query_payload.buffer, port_def->query_payload.length-1, 0,
-                      (struct sockaddr*)&target_addr, sizeof(target_addr));
-    
-    if(send_ret == -1){
-        log_trace("%s\t sendto unexpected error on port %i, errno: %i, errdesc: %s\n", 
-                  thread_id, port_def->port, errno, strerror(errno));
-        result->response = SCAN_HSTATE_ERROR;
-        close(sd);
-        return -EIO;
-    }
-    
-    
-    // request non-blocking response
-    recv_ret = recvfrom(sd, recvbuffer, sizeof(recvbuffer),
-                        0, (struct sockaddr*)&target_addr, &addr_size);
-    if(recv_ret == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
-        log_trace("%s\t recvfrom unexpected error on port %i, errno: %i, errdesc: %s\n", 
-                  thread_id, port_def->port, errno, strerror(errno));
-        result->response = SCAN_HSTATE_ERROR;
-        close(sd);
-        return -EIO;
-    }
-    
-    // wait for response
-    poll_arg.fd = sd;
-    /* include err event as open connect_ports can be too quick */
-    poll_arg.events = POLL_IN;
-    poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
-
-    /* check poll result and socket state */
-    if(poll_ret > 0 && poll_arg.revents & POLL_IN){
-        //poll has data from recvfrom
-        result->response = SCAN_HSTATE_LIVE;
-        result->host_type = port_def->device_type;
-        result->services = nm_list_add(result->services, port_def->service);
-        log_trace("%s host found, receive from port %hu", 
-                    thread_id, port_def->port);
-    }else if(poll_ret == 0){    //poll timed out
-        log_trace("%s\t poll-udp - timeout, port %i",
-                  thread_id, port_def->port);
-    }else{      //poll error
-        log_trace("%s\t poll-udp - error with port %i, error errno: %i, errdesc: %s", 
-                 thread_id, port_def->port, errno, strerror(errno));
-    }
-    
-    close(sd);
-    return 0;
-}
 
 
 void scan_connect_thread(gpointer target_data, gpointer results_data) {
@@ -1164,9 +943,9 @@ void scan_connect_thread(gpointer target_data, gpointer results_data) {
         //connect_start = nm_time_ms();
         
         if(port_def.protocol == SCAN_PROTO_TCP)
-            ret = scan_probe_send_tcp(thread_id, result, &port_def, ip_addr);
+            ret = probe_connect_tcp(thread_id, result, &port_def, ip_addr);
         else if(port_def.protocol == SCAN_PROTO_UDP)
-            ret = scan_probe_send_udp(thread_id, result, &port_def, ip_addr);
+            ret = probe_sendrecv_udp(thread_id, result, &port_def, ip_addr);
         
         if(ret)
             break;
@@ -1190,8 +969,10 @@ void scan_connect_thread(gpointer target_data, gpointer results_data) {
 }
 
 
-bool scan_discover_subnet_hosts(int connect, int listen) {
-    log_trace("scan_discover_subnet_hosts starting...");
+bool scan_discover_subnet(int connect, int listen) {
+    log_trace("scan_discover_subnet_hosts starting, connect: %i, listen: %i",
+                connect, listen);
+    
     if(!connect && !listen)
         return false;
 
@@ -1210,9 +991,11 @@ bool scan_discover_subnet_hosts(int connect, int listen) {
     }
 
     //wait for all the scans to end
+    log_trace("scan_discover_subnet_hosts: start waiting for connect");
     if(connect)
         g_thread_join(conn_thread);
 
+    log_trace("scan_discover_subnet_hosts: start waiting for listen");
     if(listen)
         g_thread_join(list_thread);
 
@@ -1352,151 +1135,183 @@ bool scan_discover_subnet_hosts(int connect, int listen) {
 
 
 
-bool scan_proto_ssdp_query(int sd, void *lp){
-    assert(sd > 0);
 
-    struct sockaddr_in send_addr;
-    send_addr.sin_addr.s_addr = inet_addr(proto_ssdp.send_ip);
-    send_addr.sin_family = AF_INET;
-    send_addr.sin_port = htons(1900);
-    ssize_t bytes_sent = sendto(sd, proto_ssdp.query_message, strlen(proto_ssdp.query_message), 0,
-                                 (struct sockaddr*)&send_addr, sizeof(send_addr));
-    if(bytes_sent < 0){
-        log_debug("scan_proto_ssdp_query: could not send query, err %i, %s", errno, strerror(errno));
-        return false;
+int scan_list_arp_hosts(){
+    log_trace("scan_list_arp_hosts: called");
+    
+    FILE *arp_fd;
+    nm_host *entry;
+
+    char line[NM_GEN_BUFFSIZE], ip_buffer[NM_MAX_BUFF_IP], host_buffer[NM_MAX_BUFF_HOST];
+    char hw_addr[NM_MAX_BUFF_HWADDR];
+    int num_tokens, type, flags, num_lines, num_found = 0;
+
+    if ((arp_fd = fopen("/proc/net/arp", "r")) == NULL) {
+        perror("Error opening arp table");
+        return 0;
     }
-    log_debug("scan_proto_ssdp_query: send query with %li bytes", bytes_sent);
-    return true;
-}
+    // ignore header
+    if(fgets(line, sizeof(line), arp_fd) == NULL){
+        perror("Nothing in arp table files");
+        return 0;
+    }
 
-void scan_proto_ssdp_response_process(scan_result *result, char *in_buffer, ssize_t in_size, char *key, int num_lines) {
-    char line[256], key_token[64], value_token[256];
-    service_record *record;
-    int num_records = sizeof(ssdp_service_map) / sizeof(ssdp_service_map[0]);
+    for (num_lines = 0; fgets(line, sizeof(line), arp_fd); num_lines++) {
+        if(scan.quit_now)
+            return 0;
 
-    log_debug("scan_proto_ssdp_response_process: processing response");
-
-    for(int i=0; i<num_lines; i++){
-        nm_string_copy_line(in_buffer, in_size, i, line, sizeof(line));
-        key_token[0] = 0; value_token[0] = 0;
-        sscanf(line, "%[a-zA-Z0-9:-] %s", key_token, value_token);
-//        log_debug("scan_proto_ssdp_response_process: scanf of line '%s' gives key '%s' and value '%s'",
-//                    line, key_token, value_token);
-        if(strlen(key_token) && !strcmp(key_token, key)){
-            for(int j=0; j < num_records; j++){
-                if(strstr(value_token, ssdp_service_map[j].signature)){
-//                    log_debug("scan_proto_ssdp_response_process: found host type %i and service %s",
-//                            ssdp_service_map[j].host_type, ssdp_service_map[j].service_name);
-                    if(ssdp_service_map[j].service_name)
-                        result->services = g_list_append(result->services, ssdp_service_map[j].service_name);
-                    if(ssdp_service_map[j].host_type != HOST_TYPE_UNKNOWN)
-                        result->host_type = ssdp_service_map[j].host_type;
-                    break;
-                }
-            }
+        num_tokens = sscanf(line, "%s 0x%x 0x%x %99s %*99s* %*99s\n", ip_buffer, &type, &flags, hw_addr);
+        if (num_tokens < 4)
             break;
-        }
+        if(!nm_validate_hw_address(hw_addr, 1))
+            continue;
+
+        if(!scan.opt_skip_resolve)
+            nm_update_hw_vendor(hw_addr, sizeof(hw_addr));
+
+        entry = nm_host_init(HOST_TYPE_UNKNOWN);
+        entry->ip_addr = inet_addr(ip_buffer);
+        if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buffer, sizeof(host_buffer)))
+            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, host_buffer);
+        else
+            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, NULL);
+
+        scan.hosts = nm_host_merge_in_list(scan.hosts, entry);
+        num_found++;
     }
-}
-
-bool scan_proto_ssdp_response(scan_result *result, char *in_buffer, ssize_t in_size){
-    assert(result != NULL);
-    assert(in_buffer != NULL);
-
-    log_debug("scan_proto_ssdp_response - received buffer len %zu", strnlen(in_buffer, in_size));
-    char line[256];
-    char *key_type = NULL;
-
-    int num_lines = nm_string_count_lines(in_buffer, in_size);
-    if(num_lines < 5){
-        log_debug("scan_proto_ssdp_response - not enough lines to begin checking, skipping");
-        return false;
-    }
-
-    nm_string_copy_line(in_buffer, in_size, 0, line, sizeof(line));
-    //log_debug("scan_proto_ssdp_response - start lines: %s", line);
-    if(!strncmp(line, proto_ssdp.header_start_notify, strlen(proto_ssdp.header_start_notify))){
-        key_type = proto_ssdp.key_notify_type;
-    }else if(!strncmp(line, proto_ssdp.header_start_response, strlen(proto_ssdp.header_start_response))){
-        key_type = proto_ssdp.key_search_type;
-    }
-    if(key_type){
-        log_debug("scan_proto_ssdp_response - looking for key: %s", key_type);
-        scan_proto_ssdp_response_process(result, in_buffer, in_size, key_type, num_lines);
-    }
-
-    return true;
+    fclose(arp_fd);
+    
+    log_trace("scan_list_arp_hosts: ending");
+    return num_found;
 }
 
 
-bool scan_proto_mdns_query(int sd, void *lp){
-    return true;
+int scan_list_gateways() {
+    log_trace("scan_list_gateways: called");
+    
+    int num_ip4_found = 0, num_ip6_found = 0, tokens;
+    char line[NM_GEN_BUFFSIZE], ip_buffer[NM_MAX_BUFF_IP], host_buffer[NM_MAX_BUFF_HOST];
+    char ip6_buffer[NM_MAX_BUFF_IP6], iface[64], *token;
+    FILE *fp;
+    nm_host *gw_host = NULL, *gw_host6;
+    struct in_addr dest, gateway;
+    struct in6_addr gateway6;
 
-}
-
-bool scan_proto_mdns_response(scan_result *result, char *in_buffer, ssize_t in_size){
-    log_debug("scan_proto_mdns_response - Port<TODO> received buffer len %zu", strnlen(in_buffer, in_size));
-
-    return true;
-}
-
-bool scan_discover_known_hosts(){
-
-    if(!scan_list_localhost()){
-        log_info("Could not resolve localhost address details");
-        return false;
+    /* read IPv4 route file first */
+    if ((fp = fopen("/proc/net/route", "r")) == NULL) {
+        log_info("Error opening route table");
+        return 0;
     }
-    if(scan.quit_now)
-        return false;
-    int routers_found = scan_list_gateways();
-    log_info("Gateway entries found: %d", routers_found);
+    // found a header?
+    if (fgets(line, sizeof(line), fp) != NULL) {
+        for (; fgets(line, sizeof(line), fp);) {
+            tokens = sscanf(line, "%s %X %X %*i %*i %*i %*i %*x %*i %*i %*i \n",
+                            iface, &dest.s_addr, &gateway.s_addr);
+            if (tokens < 3)
+                break;
+            if(dest.s_addr == 0 && gateway.s_addr != 0){
+                gw_host = nm_host_init(HOST_TYPE_ROUTER);
+                inet_ntop(AF_INET, &gateway.s_addr, ip_buffer, sizeof(ip_buffer));
+                if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buffer, sizeof(host_buffer)))
+                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, host_buffer);
+                else
+                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, NULL);
 
-    if(scan.quit_now)
-        return false;
-    int arps_found = scan_list_arp_hosts();
-    log_info("ARP entries found: %d", arps_found);
-
-    return true;
-}
-
-void *scan_start_cli_thread(gpointer callback) {
-    log_debug("scan_start_cli_thread called");
-    assert(scan.init == 1);
-
-    if(scan_util_is_running()){
-        puts("SCAN: Already running");
-        return (void *) 1;
-    }
-    scan.event_cb = callback;
-    scan_notify_start(callback);
-
-    if(scan.opt_print) puts("> Checking Known Lists first");
-    if(scan_discover_known_hosts()){
-
-        scan_notify_host_update(callback, scan.localhost);
-        scan_notify_hosts(callback);
-
-        if(scan.opt_print && (scan.opt_print_known_first || scan.opt_scan_known_only)){
-            nm_host_print(scan.localhost);
-            scan_print_mates(scan.hosts);
-        }
-        if(!scan.opt_scan_known_only){
-            if(scan.opt_print) puts("> Known List Done, switching to scan");
-            scan_discover_subnet_hosts(scan.opt_connect_threads > 0, scan.opt_listen_threads > 0);
-            scan_notify_hosts(callback);
-            if(scan.opt_print) {
-                puts("> Scan Done, complete results...");
-                puts("------------------------------");
-                scan_print_mates(scan.hosts);
+                scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host);
+                num_ip4_found++;
             }
         }
     }
+    fclose(fp);
 
-    scan_notify_stop(callback);
-    scan.event_cb = NULL;
-    log_debug("scan_start_cli_thread ending");
+    /* read IPv6 route file next */
+    if ((fp = fopen("/proc/net/ipv6_route", "r")) == NULL) {
+        log_info("Error opening ipv6_route table");
+        return num_ip4_found;
+    }
+    //no header, lines directly
+    for (; fgets(line, sizeof(line), fp);) {
+        token = nm_string_extract_token(line, ' ', 4);
+        if(strlen(token) < 32)
+            continue;
 
-    return NULL;
+        for(int i=0; i<16; i++){
+            sscanf(&token[i*2], "%2hhx", &gateway6.__in6_u.__u6_addr8[i]);
+        }
+
+        if(gateway6.__in6_u.__u6_addr32[0] != 0 || gateway6.__in6_u.__u6_addr32[1] != 0 ||
+                gateway6.__in6_u.__u6_addr32[2] != 0 || gateway6.__in6_u.__u6_addr32[3] != 0){
+
+            gw_host6 = nm_host_init(HOST_TYPE_ROUTER);
+            inet_ntop(AF_INET6, &gateway6.__in6_u, ip6_buffer, sizeof(ip6_buffer));
+            // log_trace("Printing IPv6 %s", ip6_buffer);
+
+            if(!scan.opt_skip_resolve && scan_resolve_hostname6(ip6_buffer, host_buffer, sizeof(host_buffer)))
+                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, host_buffer);
+            else
+                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, NULL);
+
+            scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host6);
+
+            num_ip6_found++;
+        }
+    }
+    fclose(fp);
+
+    log_trace("scan_list_gateways: ending with ip4: %i, ip6: %i", num_ip4_found, num_ip6_found);
+    return num_ip4_found + num_ip6_found;
+}
+
+bool scan_list_localhost() {
+    int family;
+    struct ifaddrs *if_addr, *ifa;
+    char ip_buffer[NM_MAX_BUFF_IP], host_buff[NM_MAX_BUFF_HOST];
+    char ip6_buffer[NM_MAX_BUFF_IP6], hwaddr_buffer[NM_MAX_BUFF_HWADDR];
+
+    assert(scan.localhost == NULL);
+    scan.localhost = nm_host_init(HOST_TYPE_LOCALHOST);
+
+    if (getifaddrs(&if_addr) == -1) {
+        log_warn("Could not get getifaddrs");
+        return false;
+    }
+    for (ifa = if_addr; ifa != NULL; ifa = ifa->ifa_next) {
+        //skip loopback and anything not connected (e.g cable)
+        if (ifa->ifa_addr == NULL || (ifa->ifa_flags & IFF_LOOPBACK) || !(ifa->ifa_flags & IFF_UP) ||
+            !(ifa->ifa_flags & IFF_RUNNING)) {
+            continue;
+        }
+        family = ifa->ifa_addr->sa_family;
+        if (family == AF_INET) {
+            scan.localhost->ip_addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
+            inet_ntop(AF_INET, &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr, ip_buffer, sizeof(ip_buffer));
+
+            //update ip and hostname, where hostname is host or ip, whichever we have
+            if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buff, sizeof(host_buff)))
+                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, host_buff);
+            else
+                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, NULL);
+            
+            if(ifa->ifa_netmask != NULL){
+                struct sockaddr_in *nmv = (struct sockaddr_in*)ifa->ifa_netmask;
+                nm_host_set_attributes(scan.localhost, NULL, NULL, inet_ntoa(nmv->sin_addr), NULL, NULL);
+            }
+
+        } else if (family == AF_INET6) {
+            inet_ntop(AF_INET6, &((struct sockaddr_in6 *) ifa->ifa_addr)->sin6_addr, ip6_buffer, sizeof(ip6_buffer));
+            nm_host_set_attributes(scan.localhost, NULL, ip6_buffer, NULL, NULL, NULL);
+        } else if (family == AF_PACKET) {
+            nm_format_hw_address(hwaddr_buffer, sizeof(hwaddr_buffer), (struct sockaddr_ll *) ifa->ifa_addr);
+            nm_update_hw_vendor(hwaddr_buffer, sizeof(hwaddr_buffer));
+            nm_host_set_attributes(scan.localhost, NULL, NULL, NULL, hwaddr_buffer, NULL);
+        }
+    }
+    freeifaddrs(if_addr);
+    
+    scan.hosts = nm_host_merge_in_list(scan.hosts, scan.localhost);
+    
+    return true;
+
 }
 
 
@@ -1527,7 +1342,7 @@ void scan_start() {
     
     if(!scan.opt_scan_known_only){
         printf("> Starting scan...");
-        scan_discover_subnet_hosts(scan.opt_connect_threads > 0, scan.opt_listen_threads > 0);
+        scan_discover_subnet(scan.opt_connect_threads > 0, scan.opt_listen_threads > 0);
         
         puts("Done!");
         puts("Scan Results: ------------------------------");
@@ -1541,11 +1356,9 @@ void scan_start() {
 }
 
 
-void scan_stop_threads(){
-    if(scan.running){
+void scan_stop(){
+    if(scan.running)
         scan.quit_now = 1;
-        scan_notify_stop(NULL);
-    }
 }
 
 void scan_init(int print_known_first, int print_known_only, int skip_resolve,

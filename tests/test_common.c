@@ -228,6 +228,46 @@ MunitResult test_list_all(MUNIT_ARGS) {
 }
 
 
+MunitResult test_util_hw_address(MUNIT_ARGS){
+
+    // check binary address -> string
+    char big_buffer[64];
+    unsigned char mac1[] = {0xab, 0xbc, 0xcd, 0xde, 0xef, 0xff};
+    struct sockaddr_ll sa_ll;
+    sa_ll.sll_halen = 6;
+    memcpy(sa_ll.sll_addr, mac1, 6);
+    nm_format_hw_address(big_buffer, sizeof(big_buffer), &sa_ll);
+    munit_assert_string_equal(big_buffer, "ab:bc:cd:de:ef:ff");
+
+    unsigned char mac2[] = {0x0, 0x1, 0x2, 0xde, 0xFF, 0x00};
+    sa_ll.sll_halen = 6;
+    memcpy(sa_ll.sll_addr, mac2, sa_ll.sll_halen);
+    nm_format_hw_address(big_buffer, sizeof(big_buffer), &sa_ll);
+    munit_assert_string_equal(big_buffer, "00:01:02:de:ff:00");
+
+    char small_buffer[9];
+    nm_format_hw_address(small_buffer, 6, &sa_ll);
+    munit_assert_string_equal(small_buffer, "00:");
+
+    nm_format_hw_address(small_buffer, 7, &sa_ll);
+    munit_assert_string_equal(small_buffer, "00:01:");
+
+    //check string address validation
+    munit_assert_true(nm_validate_hw_address("ab:bc:cd:de:ef:ff", 0));
+    munit_assert_true(nm_validate_hw_address("ab:bc:cd:de:ef:ff", 1));
+    munit_assert_true(nm_validate_hw_address("00:00:00:00:00:00", 0));
+    munit_assert_false(nm_validate_hw_address("00:00:00:00:00:00", 1));
+    munit_assert_true(nm_validate_hw_address("ab:bc:cd:de:00:00", 1));
+    munit_assert_true(nm_validate_hw_address("ab:00:cd:de:00:ff", 1));
+    munit_assert_true(nm_validate_hw_address("ab:00:cd:00:00:ff", 1));
+    munit_assert_false(nm_validate_hw_address("ab:00:00:00:00:ff", 1));
+    munit_assert_false(nm_validate_hw_address("00", 0));
+    munit_assert_false(nm_validate_hw_address("", 0));
+    munit_assert_false(nm_validate_hw_address("00:00:00:00:00:00 wer", 0));
+    munit_assert_false(nm_validate_hw_address("00:00:00:00:00:00wer", 0));
+
+    return MUNIT_OK;
+}
 
 
 /*
@@ -258,6 +298,7 @@ MUNIT_TESTS(tests,
     MUNIT_TEST("list_free", test_list_free)
     MUNIT_TEST("list_find", test_list_find)
     MUNIT_TEST("list_all", test_list_all)
+    MUNIT_TEST("util_hw_address", test_util_hw_address)
 );
 
 MUNIT_SUITE(suite, "/common/", tests);

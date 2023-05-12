@@ -7,9 +7,9 @@ static nm_application nm_app = {
         .arg_known_first = false,
         .arg_skip_resolve = false,
         .arg_conn_timeout = -1,
-        .arg_conn_threads = 1,
-        .arg_list_threads = 1,
-        .arg_max_hosts = 1,
+        .arg_conn_threads = -1,
+        .arg_list_threads = -1,
+        .arg_max_hosts = -1,
         .arg_scan_timeout = -1,
         .arg_subnet_offset = -1,
 //         .arg_scan_to = -1,
@@ -141,8 +141,8 @@ static void setup_signals(){
 int init_application(int argc, char **argv){
     
     
-    //log_set_level(LOG_TRACE);
-    log_set_level(LOG_DEBUG);
+    log_set_level(LOG_TRACE);
+    //log_set_level(LOG_DEBUG);
     //log_set_level(LOG_ERROR);
     log_debug("Startup");
 

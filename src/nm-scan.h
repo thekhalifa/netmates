@@ -61,7 +61,7 @@ enum scan_host_state{
 };
 
 
-typedef void    (*scanner_callback)(int type, void* data);
+//typedef void    (*scanner_callback)(int type, void* data);
 
 
 typedef struct{
@@ -79,7 +79,7 @@ typedef struct{
     int opt_poll_thread_work_us;
     int opt_max_hosts;
     int opt_subnet_offset;
-    scanner_callback event_cb;
+    //scanner_callback event_cb;
     nmlist *hosts;
     nm_host *localhost;
 } scan_state;
@@ -141,10 +141,6 @@ int             scan_util_get_sock_error(int sd);
 int             scan_util_get_sock_info(int sd);
 bool            scan_util_calc_subnet_range(const char *ip, const char *netmask, scan_range *range);
 void            scan_result_destroy(scan_result *result);
-// void            scan_util_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len);
-// void            scan_util_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll);
-// bool            scan_util_validate_hw_address(char *address, int real_address);
-
 
 /* local info gathering */
 int             scan_list_arp_hosts();
@@ -157,19 +153,16 @@ int             scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t b
 /* application & scan functions */
 void            scan_print_mates(nmlist *hosts);
 void            scan_process_result(scan_result *result, int *live_counter);
-void            scan_notify_start(void *callback);
-void            scan_notify_stop(void *callback);
 
 gpointer        scan_main_listen_thread(gpointer data);
 void            scan_listen_thread(gpointer target_data, gpointer results_data);
 gpointer        scan_main_connect_thread(gpointer data);
 void            scan_connect_thread(gpointer target_data, gpointer results_data);
 
-bool            scan_discover_subnet_hosts(int connect, int listen);
-bool            scan_discover_known_hosts();
-void           *scan_start_cli_thread(gpointer callback);
+bool            scan_discover_subnet(int connect, int listen);
+
 void            scan_start();
-void            scan_stop_threads();
+void            scan_stop();
 void            scan_init(int print_known_first, int print_known_only, int skip_resolve,
                           int conn_threads, int conn_timeout, int max_hosts, 
                           int list_threads, int subnet_timeout, int subnet_offset);
@@ -184,11 +177,21 @@ typedef struct {
 } service_record;
 
 
-bool    scan_proto_ssdp_query(int sd, void *lp);
-bool    scan_proto_ssdp_response(scan_result *result, char *in_buffer, ssize_t in_size);
+bool    probe_ssdp_query(int sd, void *lp);
+bool    probe_ssdp_response(scan_result *result, char *in_buffer, ssize_t in_size);
 
-bool    scan_proto_mdns_query(int sd, void *lp);
-bool    scan_proto_mdns_response(scan_result *result, char *in_buffer, ssize_t in_size);
+// bool    scan_proto_mdns_query(int sd, void *lp);
+// bool    scan_proto_mdns_response(scan_result *result, char *in_buffer, ssize_t in_size);
+// bool scan_proto_mdns_query(int sd, void *lp){
+//     return true;
+// 
+// }
+// 
+// bool scan_proto_mdns_response(scan_result *result, char *in_buffer, ssize_t in_size){
+//     log_debug("scan_proto_mdns_response - Port<TODO> received buffer len %zu", strnlen(in_buffer, in_size));
+// 
+//     return true;
+// }
 
 
 
