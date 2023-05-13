@@ -10,7 +10,8 @@
 /* order of priority is lower number overrides the highs when a merge of
  * two hosts happens - except localhost  */
 enum nm_host_type{
-    HOST_TYPE_LOCALHOST = 0,
+    HOST_TYPE_UNKNOWN = 0,
+    HOST_TYPE_LOCALHOST,
     HOST_TYPE_ROUTER,
     HOST_TYPE_PHONE,
     HOST_TYPE_PRINTER,
@@ -19,21 +20,20 @@ enum nm_host_type{
     HOST_TYPE_PC_WIN,
     HOST_TYPE_PC,
     HOST_TYPE_ANY,
-    HOST_TYPE_UNKNOWN,
     HOST_TYPE_LENGTH
 };
 
 static char *nm_host_type_labels[] = {
+        "unknown",
         "local",
         "router",
         "phone",
         "printer",
-        "smartdevice",
+        "smart device",
         "TV",
-        "Win PC",
+        "Windows PC",
         "PC",
         "anything",
-        "unknown",
         NULL
 };
 

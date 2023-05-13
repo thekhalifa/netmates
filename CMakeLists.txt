@@ -27,6 +27,7 @@ add_executable( nmlite src/main.c
                 src/nm-common.h src/nm-common.c
                 src/nm-host.h src/nm-host.c
                 src/nm-scan.h src/nm-scan.c
+                src/nm-protocol.h src/nm-protocol.c
                 src/nm-vendordb.h src/nm-vendordb.c
                 src/log.h src/log.c)
 target_include_directories(nmlite PRIVATE src/)

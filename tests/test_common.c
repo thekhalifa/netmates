@@ -270,6 +270,35 @@ MunitResult test_util_hw_address(MUNIT_ARGS){
 }
 
 
+MunitResult test_log_trace_bytes(MUNIT_ARGS){
+
+    unsigned char mac1[] = {0xab, 0xbc, 0xcd, 0xde, 0xef, 0xff};
+    size_t len = 6;
+    
+    log_set_level(LOG_WARN);
+    nm_log_trace_bytes("test_log_trace_bytes1", mac1, len);
+    
+    log_set_level(LOG_TRACE);
+    nm_log_trace_bytes("test_log_trace_bytes2", mac1, len);
+    
+    munit_assert_true(1);
+    
+    uint8_t buffer2[] = {
+    0x12,  '4', 0x84, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x09,  '_',  's',  'e',         //000f
+     'r',  'v',  'i',  'c',  'e',  's', 0x07,  '_',  'd',  'n',  's',  '-',  's',  'd', 0x04,  '_',         //001f
+     'u',  'd',  'p', 0x05,  'l',  'o',  'c',  'a',  'l', 0x00, 0x00, 0x0C, 0x80, 0x01, 0xC0, 0x0C,         //002f
+    0x00, 0x0C, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x0C, 0x04,  '_',  's',  'm',  'b', 0x04,         //003f
+     '_',  't',  'c',  'p', 0xC0,  '#', 0xC0, 0x0C, 0x00, 0x0C, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0A,         //004f
+    0x00, 0x0F, 0x0C,  '_',  'd',  'e',  'v',  'i',  'c',  'e',  '-',  'i',  'n',  'f',  'o', 0xC0,         //005f
+     '?', 
+    };
+
+    nm_log_trace_bytes("test_log_trace_bytes3", buffer2, sizeof(buffer2));
+
+    return MUNIT_OK;
+}
+
+
 /*
 
 MunitTest tests[] = {
@@ -299,6 +328,7 @@ MUNIT_TESTS(tests,
     MUNIT_TEST("list_find", test_list_find)
     MUNIT_TEST("list_all", test_list_all)
     MUNIT_TEST("util_hw_address", test_util_hw_address)
+    MUNIT_TEST("log_trace_bytes", test_log_trace_bytes)
 );
 
 MUNIT_SUITE(suite, "/common/", tests);

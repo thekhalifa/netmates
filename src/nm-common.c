@@ -294,3 +294,56 @@ void nm_update_hw_vendor(char *hw_addr, int size) {
         snprintf(hw_addr+len, free_space, " [%s]", vendor_org);
 }
 
+
+void nm_log_trace_buffer(const char *sign, const void *buffer, int len){
+    
+    if(log_get_level() != LOG_TRACE)
+        return;
+    
+    char logbuffer[NM_GEN_BUFFSIZE];
+    snprintf(logbuffer, (sizeof(logbuffer) < len ? sizeof(logbuffer) : len), 
+            "%s", (char *)buffer);
+    log_trace("%s: buffer with %li bytes", sign, len);
+    log_trace("--\n%s", logbuffer);
+
+}
+
+void nm_log_trace_bytes(const char *sign, const uint8_t *data, int len){
+
+    if(log_get_level() != LOG_TRACE)
+        return;
+    
+    char buffer[NM_LARGE_BUFFSIZE];
+    char *buffpoint = buffer;
+    int width = 16;
+    const uint8_t *start = data;
+    const uint8_t *point;
+    //printf("    ");
+    buffpoint += sprintf(buffpoint, "    ");
+    for(int i=0; i < len && (buffpoint - buffer) < NM_LARGE_BUFFSIZE; i++){
+        point = start + i;
+        
+        if(isprint(*point) || ispunct(*point))
+            buffpoint += sprintf(buffpoint, " '%c', ", (int)*point);
+        else
+            buffpoint += sprintf(buffpoint, "0x%02X, ", *point);
+        
+        if((i+1) % width == 0 || i == len)
+            buffpoint += sprintf(buffpoint, "        //%04x\n    ", i);
+    }
+    buffpoint += sprintf(buffpoint, "\n");
+    
+    log_trace("%s: buffer with %li bytes", sign, len);
+    log_trace("--\n%s", buffer);
+
+}
+
+
+void nm_copy_netbytes_to_shorts(uint16_t *buff, const uint8_t *src, size_t len) {
+    if (len % 2 == 1) 
+        return;
+    
+    for (int i = 0; i < len / 2; i++){
+        buff[i] = ntohs( src[i*2+1] << 8 | src[i*2]);
+    }
+}

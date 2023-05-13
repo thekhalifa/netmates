@@ -25,15 +25,7 @@ static scan_state scan = {
 // 5948/tcp open  unknown
 // 7680/tcp open  pando-pub
 
-#define UDP_QUERY_DNS "\x71\x80\x01\x00\x00\x01\x00\x00\x00\x00\x00\x01\x08\x61\x6f\x75" \
-"\x72\x67\x61\x74\x65\x03\x6c\x61\x6e\x00\x00\x01\x00\x01\x00\x00" \
-"\x29\x02\x00\x00\x00\x00\x00\x00\x00"
 
-
-#define UDP_QUERY_NBS "\x80\xf0\x00\x10\x00\x01\x00\x00\x00\x00\x00\x00\x20\x43\x4b\x41" \
-"\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41" \
-"\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21" \
-"\x00\x01"
 
 static const scan_port scan_port_list[] = {
     {.port = 80, .service = "http", .protocol = SCAN_PROTO_TCP, .required = 1,
@@ -64,8 +56,8 @@ static const scan_port scan_port_list[] = {
         .device_type = HOST_TYPE_UNKNOWN},
     {.port = 6668, .service = "tuya", .protocol = SCAN_PROTO_TCP, .required = 0,
         .device_type = HOST_TYPE_SMART_DEVICE},
-    {.port = 5353, .service = "mdns", .protocol = SCAN_PROTO_TCP, .required = 0,
-        .device_type = HOST_TYPE_PC},
+    //{.port = 5353, .service = "mdns", .protocol = SCAN_PROTO_TCP, .required = 0,
+    //    .device_type = HOST_TYPE_PC},
     {.port = 5357, .service = "wsd", .protocol = SCAN_PROTO_TCP, .required = 0,
         .device_type = HOST_TYPE_PC_WIN},
     {.port = 5040, .service = "?", .protocol = SCAN_PROTO_TCP, .required = 0,
@@ -78,52 +70,20 @@ static const scan_port scan_port_list[] = {
 
 
 static const scan_listen_port scan_listen_list[] = {
-    {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
-        .port.device_type = HOST_TYPE_UNKNOWN, //TODO: Fix me after checking SSDP
-        .min_time = 1000, .max_time = 5000, .bind_port = 0,
-        .mc_join = 1, .mc_ip = "239.255.255.250",
-        .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
+//     {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
+//         .min_time = 1000, .max_time = 5000, .bind_port = 0,
+//         .mc_join = 1, .mc_ip = "239.255.255.250",
+//         .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
+//     },
+    {.port.port = 5353, .port.service = "mdns", .port.required = 1,
+        .min_time = 100, .max_time = 3000, .bind_port = 0,
+        .mc_join = 0, .mc_ip = "224.0.0.251",
+        .query_cb = probe_mdns_query, .response_cb = probe_mdns_response
     },
 /*        {.port.port = 6667, .port.service = "tuya", .port.required = 1,
                 .port.device_type = HOST_TYPE_SMART_DEVICE,
                 .min_time = 5000, .max_time = 25000, .bind_port = 6667},
-        {.port.port = 5353, .port.service = "mdns", .port.required = 1,
-                .port.device_type = HOST_TYPE_UNKNOWN, //TODO: Fix me after checking SSDP
-                .min_time = 5000, .max_time = 5000, .bind_port = 0,
-                .mc_join = 1, .mc_ip = "224.0.0.251",
-                .query_cb = scan_proto_mdns_query, .response_cb = scan_proto_mdns_response}
 */
-};
-
-
-struct proto_sdp {
-    char *send_ip;
-    char *query_message;
-    char *header_start_search;
-    char *header_start_notify;
-    char *header_start_response;
-    char *key_notify_type;
-    char *key_search_type;
-} proto_ssdp = {
-        .send_ip = "239.255.255.250",
-        .query_message = "M-SEARCH * HTTP/1.1\r\n"
-                         "HOST: 239.255.255.250:1900\r\n"
-                         "MAN: \"ssdp:discover\"\r\n"
-                         "MX: 1\r\n"
-                         "ST: ssdp:all\r\n\r\n",
-        .header_start_search = "M-SEARCH * HTTP/1.1",
-        .header_start_notify = "NOTIFY * HTTP/1.1",
-        .header_start_response = "HTTP/1.1 200 OK",
-        .key_notify_type = "NT:",
-        .key_search_type = "ST:",
-};
-
-service_record ssdp_service_map[] = {
-        {.signature = "upnp:rootdevice", .service_name = "upnp", .host_type = HOST_TYPE_UNKNOWN},
-        {.signature = "urn:dial-multiscreen-org:device:dial", .service_name = "DIAL", .host_type = HOST_TYPE_SMART_TV},
-        {.signature = "urn:mdx-netflix-com:service:target", .service_name = "Netflix", .host_type = HOST_TYPE_UNKNOWN},
-        {.signature = "FIRETVSTICK", .service_name = NULL, .host_type = HOST_TYPE_SMART_TV},
-        {.signature = "urn:schemas-upnp-org:device:InternetGatewayDevice", .service_name = NULL, .host_type = HOST_TYPE_ROUTER},
 };
 
 
@@ -279,10 +239,11 @@ int scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size) 
 
     char host[NM_MAX_BUFF_HOST];
     char service[32];
-    struct sockaddr_in addr;
-    addr.sin_port = 0;
-    addr.sin_family = AF_INET6;
-    addr.sin_addr.s_addr = inet_addr(ip);
+    struct sockaddr_in6 addr;
+    addr.sin6_port = 0;
+    addr.sin6_family = AF_INET6;
+    //addr.sin6_addr.s_addr = inet_addr(ip);
+    inet_pton(AF_INET6, ip, &addr.sin6_addr);
     if(getnameinfo((struct sockaddr *) &addr,sizeof(addr), host, sizeof(host),
                    service, sizeof(service), NI_NUMERICSERV) != 0){
         return 0;
@@ -294,90 +255,6 @@ int scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size) 
     return 0;
 }
 
-
-bool probe_ssdp_query(int sd, void *lp){
-    assert(sd > 0);
-
-    log_trace("probe_ssdp_query: sending query");
-    
-    struct sockaddr_in send_addr;
-    send_addr.sin_addr.s_addr = inet_addr(proto_ssdp.send_ip);
-    send_addr.sin_family = AF_INET;
-    send_addr.sin_port = htons(1900);
-    ssize_t bytes_sent = sendto(sd, proto_ssdp.query_message, strlen(proto_ssdp.query_message), 0,
-                                 (struct sockaddr*)&send_addr, sizeof(send_addr));
-    if(bytes_sent < 0){
-        log_debug("scan_proto_ssdp_query: could not send query, err %i, %s", errno, strerror(errno));
-        return false;
-    }
-    log_trace("probe_ssdp_query: query with %li bytes", bytes_sent);
-    log_trace("\n\n%s\n\n", proto_ssdp.query_message);
-    return true;
-}
-
-void probe_ssdp_process(scan_result *result, char *in_buffer, ssize_t in_size, char *key, int num_lines) {
-    char line[256], key_token[64], value_token[256];
-    service_record *record;
-    int num_records = sizeof(ssdp_service_map) / sizeof(ssdp_service_map[0]);
-
-    log_trace("probe_ssdp_process: processing response");
-
-    for(int i=0; i<num_lines; i++){
-        nm_string_copy_line(in_buffer, in_size, i, line, sizeof(line));
-        key_token[0] = 0; value_token[0] = 0;
-        sscanf(line, "%[a-zA-Z0-9:-] %s", key_token, value_token);
-//        log_debug("probe_ssdp_process: scanf of line '%s' gives key '%s' and value '%s'",
-//                    line, key_token, value_token);
-        if(strlen(key_token) && !strcmp(key_token, key)){
-            for(int j=0; j < num_records; j++){
-                if(strstr(value_token, ssdp_service_map[j].signature)){
-//                    log_debug("probe_ssdp_process: found host type %i and service %s",
-//                            ssdp_service_map[j].host_type, ssdp_service_map[j].service_name);
-                    if(ssdp_service_map[j].service_name)
-                        result->services = nm_list_add(result->services, strdup(ssdp_service_map[j].service_name));
-                    if(ssdp_service_map[j].host_type != HOST_TYPE_UNKNOWN)
-                        result->host_type = ssdp_service_map[j].host_type;
-                    break;
-                }
-            }
-            break;
-        }
-    }
-}
-
-bool probe_ssdp_response(scan_result *result, char *in_buffer, ssize_t in_size){
-    assert(result != NULL);
-    assert(in_buffer != NULL);
-
-    char buffer[NM_GEN_BUFFSIZE];
-    snprintf(buffer, sizeof(buffer), "%s", in_buffer);
-    
-    log_trace("probe_ssdp_response: response with %li bytes", in_size);
-    log_trace("--\n%s", buffer);
-    
-    char line[256];
-    char *key_type = NULL;
-
-    int num_lines = nm_string_count_lines(in_buffer, in_size);
-    if(num_lines < 5){
-        log_debug("scan_proto_ssdp_response - not enough lines to begin checking, skipping");
-        return false;
-    }
-
-    nm_string_copy_line(in_buffer, in_size, 0, line, sizeof(line));
-    //log_debug("scan_proto_ssdp_response - start lines: %s", line);
-    if(!strncmp(line, proto_ssdp.header_start_notify, strlen(proto_ssdp.header_start_notify))){
-        key_type = proto_ssdp.key_notify_type;
-    }else if(!strncmp(line, proto_ssdp.header_start_response, strlen(proto_ssdp.header_start_response))){
-        key_type = proto_ssdp.key_search_type;
-    }
-    if(key_type){
-        log_debug("scan_proto_ssdp_response - looking for key: %s", key_type);
-        probe_ssdp_process(result, in_buffer, in_size, key_type, num_lines);
-    }
-
-    return true;
-}
 
 
 int probe_connect_tcp(const char *thread_id, scan_result *result, 
@@ -706,8 +583,10 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
     bind_addr.sin_addr.s_addr = INADDR_ANY;
     bind_addr.sin_port = htons(listen_port->bind_port);
     if(bind(sd, (struct sockaddr *) & bind_addr, sizeof(bind_addr)) < 0){
-        log_debug("%s Could not bind to port %i, errno: %i, errdesc: %s \n", thread_signature, port_num, errno, strerror(errno));
-        log_debug("%s End listen thread [time: %lu ms]!", thread_signature, nm_time_ms_diff(thread_start));
+        log_debug("%s Could not bind to port %i, errno: %i, errdesc: %s \n",
+                  thread_signature, port_num, errno, strerror(errno));
+        log_debug("%s End listen thread [time: %lu ms]!",
+                  thread_signature, nm_time_ms_diff(thread_start));
         return;
     }
 
@@ -780,6 +659,7 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
         //port-specific response processing
         if(listen_port->response_cb != NULL){
             log_trace("%s Executing response callback", thread_signature);
+            //TODO: process probe results
             if(!(listen_port->response_cb)(result, recv_buffer, actual_size))
                 log_trace("%s Error with response callback", thread_signature);
         }

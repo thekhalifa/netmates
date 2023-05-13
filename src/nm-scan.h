@@ -14,6 +14,7 @@
 
 #include "nm-common.h"
 #include "nm-host.h"
+#include "nm-protocol.h"
 
 
 
@@ -108,7 +109,7 @@ typedef struct {
 } scan_port;
 
 
-typedef struct {
+typedef struct scan_result{
     enum scan_direction direction;
     enum scan_host_state response;
     enum nm_host_type host_type;
@@ -120,7 +121,7 @@ typedef struct {
 
 
 typedef bool(*scan_query_callback)(int type, void* data);
-typedef bool(*scan_response_callback)(scan_result *result, char *in_buffer, ssize_t in_size);
+typedef bool(*scan_response_callback)(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
 typedef struct {
     scan_port port;
@@ -130,7 +131,8 @@ typedef struct {
     int mc_join;
     char *mc_ip;
     //scan_query_callback *query_cb;
-    bool(*query_cb)(int, void*);
+    //bool(*query_cb)(int, void*);
+    scan_query_callback query_cb;
     scan_response_callback response_cb;
 } scan_listen_port;
 
@@ -168,30 +170,6 @@ void            scan_init(int print_known_first, int print_known_only, int skip_
                           int list_threads, int subnet_timeout, int subnet_offset);
 void            scan_destroy();
 
-
-
-typedef struct {
-    char *signature;
-    char *service_name;
-    enum nm_host_type host_type;
-} service_record;
-
-
-bool    probe_ssdp_query(int sd, void *lp);
-bool    probe_ssdp_response(scan_result *result, char *in_buffer, ssize_t in_size);
-
-// bool    scan_proto_mdns_query(int sd, void *lp);
-// bool    scan_proto_mdns_response(scan_result *result, char *in_buffer, ssize_t in_size);
-// bool scan_proto_mdns_query(int sd, void *lp){
-//     return true;
-// 
-// }
-// 
-// bool scan_proto_mdns_response(scan_result *result, char *in_buffer, ssize_t in_size){
-//     log_debug("scan_proto_mdns_response - Port<TODO> received buffer len %zu", strnlen(in_buffer, in_size));
-// 
-//     return true;
-// }
 
 
 

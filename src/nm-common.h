@@ -79,4 +79,11 @@ void        nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll
 bool        nm_validate_hw_address(char *address, int real_address);
 void        nm_update_hw_vendor(char *hw_addr, int size);
 
+void        nm_log_trace_buffer(const char *sign, const void *buffer, int len);
+void        nm_log_trace_bytes(const char *sign, const uint8_t *data, int len);
+void        nm_log_bytes_readable(void *data, int len);
+void        nm_copy_netbytes_to_shorts(uint16_t *buff, const uint8_t *src, size_t len);
+
+
+
 #endif //NETWORK_MATES_NM_COMMON_H

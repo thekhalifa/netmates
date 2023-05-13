@@ -41,7 +41,7 @@ void nm_host_destroy(nm_host *host) {
 
 void nm_host_set_type(nm_host *host, enum nm_host_type type) {
     //type - by declaration priority, except localhost
-    if(type < host->type)
+    if(type > HOST_TYPE_UNKNOWN && type < host->type)
         host->type = type;
 }
 
