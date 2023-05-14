@@ -22,8 +22,7 @@ set(CMAKE_C_STANDARD 11)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
 
-add_executable( nmlite src/main.c
-                src/nm-app.h src/nm-app.c
+add_executable( nmlite src/nm-app.c
                 src/nm-common.h src/nm-common.c
                 src/nm-host.h src/nm-host.c
                 src/nm-scan.h src/nm-scan.c

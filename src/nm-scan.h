@@ -72,6 +72,7 @@ typedef struct{
     int opt_print;
     int opt_print_known_first;
     int opt_scan_known_only;
+    int opt_scan_all;
     int opt_skip_resolve;
     int opt_connect_threads;
     int opt_connect_timeout_ms;
@@ -153,8 +154,11 @@ int             scan_resolve_hostname(char *ip, char *hostname_buffer, size_t bu
 int             scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size);
 
 /* application & scan functions */
-void            scan_print_mates(nmlist *hosts);
+void            scan_print_mates(nmlist *hosts, bool showtotal);
 void            scan_process_result(scan_result *result, int *live_counter);
+
+bool            scan_response_ack(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
+bool            scan_response_log(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
 gpointer        scan_main_listen_thread(gpointer data);
 void            scan_listen_thread(gpointer target_data, gpointer results_data);
@@ -165,7 +169,8 @@ bool            scan_discover_subnet(int connect, int listen);
 
 void            scan_start();
 void            scan_stop();
-void            scan_init(int print_known_first, int print_known_only, int skip_resolve,
+void            scan_init(int print_known_first, int print_known_only, int scan_all,
+                          int skip_resolve,
                           int conn_threads, int conn_timeout, int max_hosts, 
                           int list_threads, int subnet_timeout, int subnet_offset);
 void            scan_destroy();

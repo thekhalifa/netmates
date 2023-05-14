@@ -1,17 +1,31 @@
-#include "nm-app.h"
+#include <signal.h>
+
 #include "nm-scan.h"
 
 /* Application argument defaults */
-static nm_application nm_app = {
-        .arg_known_only = false,
-        .arg_known_first = false,
-        .arg_skip_resolve = false,
-        .arg_conn_timeout = -1,
-        .arg_conn_threads = 0,
-        .arg_list_threads = 0,
-        .arg_max_hosts = 1,
-        .arg_scan_timeout = -1,
-        .arg_subnet_offset = -1,
+
+struct {
+    bool arg_known_only;
+    bool arg_scan_all;
+    bool arg_known_first;
+    bool arg_skip_resolve;
+    int arg_conn_threads;
+    int arg_conn_timeout;
+    int arg_list_threads;
+    int arg_max_hosts;
+    int arg_scan_timeout;
+    int arg_subnet_offset;
+}  nm_app = {
+    .arg_known_only = false,
+    .arg_known_first = false,
+    .arg_scan_all = true,
+    .arg_skip_resolve = false,
+    .arg_conn_timeout = -1,
+    .arg_conn_threads = 255,
+    .arg_list_threads = 16,
+    .arg_max_hosts = -1,
+    .arg_scan_timeout = -1,
+    .arg_subnet_offset = -1,
 //         .arg_scan_to = -1,
 //         .arg_conn_th = -1,
 //         .arg_conn_to = -1,
@@ -130,27 +144,35 @@ static gboolean on_signal_received (gpointer data){
 }
 */
 
-static void setup_signals(){
+void signal_handler(int signum){
+
+    printf("Signal received, quitting!\n");
+    scan_stop();
+}
+
+static void signal_setup(){
     //g_unix_signal_add(SIGTERM, on_signal_received, (gpointer)scan_stop_threads);
     //g_unix_signal_add(SIGINT, on_signal_received, (gpointer)scan_stop_threads);
+    signal(SIGTERM, signal_handler);
+    signal(SIGINT, signal_handler);
     return;
 }
 
 
 
 int init_application(int argc, char **argv){
-    
-    
-    log_set_level(LOG_TRACE);
+
+    //log_set_level(LOG_TRACE);
     //log_set_level(LOG_DEBUG);
-    //log_set_level(LOG_ERROR);
+    log_set_level(LOG_ERROR);
     log_debug("Startup");
 
     process_args(argc, argv);
     
-    setup_signals();
+    signal_setup();
     scan_init(nm_app.arg_known_first,
               nm_app.arg_known_only,
+              nm_app.arg_scan_all,
               nm_app.arg_skip_resolve,
               nm_app.arg_conn_threads,
               nm_app.arg_conn_timeout,
@@ -164,17 +186,11 @@ int init_application(int argc, char **argv){
     scan_destroy();
     return 0;
     
-    //nm_app.scan_thread = g_thread_try_new("ScanThread", scan_start_cli_thread, NULL, &error);
-    /*
-    if(error != NULL){
-        puts("Error starting the scan thread, quitting");
-        return 1;
-    }
-
-    g_idle_add(check_cli_running, NULL);
-    */
-    //build_window(gtkapp);
-
 
 }
 
+
+
+int main (int argc, char **argv){
+    return init_application(argc, argv);    
+}

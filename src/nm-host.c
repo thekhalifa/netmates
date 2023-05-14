@@ -41,7 +41,7 @@ void nm_host_destroy(nm_host *host) {
 
 void nm_host_set_type(nm_host *host, enum nm_host_type type) {
     //type - by declaration priority, except localhost
-    if(type > HOST_TYPE_UNKNOWN && type < host->type)
+    if(type > HOST_TYPE_UNKNOWN && (type < host->type || host->type == HOST_TYPE_UNKNOWN))
         host->type = type;
 }
 
@@ -149,6 +149,41 @@ void nm_host_print2(nm_host *host) {
 
 
 void nm_host_print(nm_host *host) {
+    assert(host != NULL);
+    assert(host->ip != NULL || host->ip6 != NULL);
+
+    const char *type = nm_host_type_labels[host->type];
+    if(host->hostname)
+        printf("+ [%s] %s\n", type, host->hostname);
+    else
+        printf("+ [%s]\n", type);
+
+    if(host->ip)
+        printf("   IPv4:  %s\n", host->ip);
+    nm_list_foreach(node, host->list_ip)
+        printf("   IPv4:  %s\n", (char *)node->data);
+
+    if(host->ip6)
+        printf("   IPv6:  %s\n", host->ip6);
+    nm_list_foreach(node, host->list_ip6)
+        printf("   IPv6:  %s\n", (char *)node->data);
+
+    if(host->hw_addr)
+        printf("   MAC:   %s\n", host->hw_addr);
+    nm_list_foreach(node, host->list_hw_addr)
+        printf("   MAC:   %s\n", (char *)node->data);
+
+    if(host->list_services == NULL)
+        return;
+    printf("   Srvc:  ");
+    nm_list_foreach(node, host->list_services)
+        printf("%s ", (char *)node->data);
+    printf("\n");
+
+}
+
+
+void nm_host_print3(nm_host *host) {
     assert(host != NULL);
     assert(host->ip != NULL || host->ip6 != NULL);
 

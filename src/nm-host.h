@@ -24,7 +24,7 @@ enum nm_host_type{
 };
 
 static char *nm_host_type_labels[] = {
-        "unknown",
+        "?",
         "local",
         "router",
         "phone",

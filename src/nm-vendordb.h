@@ -37,8 +37,8 @@ int             vendor_db_destroy();
 
 const char *    vendor_db_query(const char *assigned);
 
-static int      vendor_db_util_add_record(char *fld_assignment, char *fld_organisation);
-static char *   vendor_db_util_extract_token(char *line, int index);
-static int      vendor_db_util_compare_record(const void *a, const void *b);
+// static int      vendor_db_util_add_record(char *fld_assignment, char *fld_organisation);
+// static char *   vendor_db_util_extract_token(char *line, int index);
+// static int      vendor_db_util_compare_record(const void *a, const void *b);
 
 #endif //NETWORK_MATES_NM_VENDORDB_H

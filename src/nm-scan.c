@@ -8,11 +8,12 @@ static scan_state scan = {
         .opt_print = 0,
         .opt_print_known_first = 0,
         .opt_scan_known_only = 0,
+        .opt_scan_all = 0,
         .opt_skip_resolve = 0,
-        .opt_connect_threads = 50,
+        .opt_connect_threads = 255,
         .opt_connect_timeout_ms = 500,
         .opt_listen_threads = 10,
-        .opt_subnet_timeout_ms = 10000,
+        .opt_subnet_timeout_ms = 2000,
         .opt_poll_thread_work_us = 10000,
         .opt_max_hosts = 0,
         .opt_subnet_offset = 0
@@ -25,7 +26,12 @@ static scan_state scan = {
 // 5948/tcp open  unknown
 // 7680/tcp open  pando-pub
 
-
+/*Alex
+  Output TCP: *, 80, 8080, 443, 40317, 67, 68
+* Output UDP: *, 53, 123, 40317, 49317, 33434, 1900, 5000, 5353
+* Input TCP: 8080, 443, 40317
+* Input UDP: 53, 67, 68, 1900, 50000, 5353, 33434, 49317, 40317
+*/
 
 static const scan_port scan_port_list[] = {
     {.port = 80, .service = "http", .protocol = SCAN_PROTO_TCP, .required = 1,
@@ -40,12 +46,27 @@ static const scan_port scan_port_list[] = {
         .device_type = HOST_TYPE_PC},
     {.port = 8888, .service = "http-8888", .protocol = SCAN_PROTO_TCP, .required = 1,
         .device_type = HOST_TYPE_PC},
-    {.port = 137, .service = "nbs", .protocol = SCAN_PROTO_UDP, .required = 1,
+    {.port = 137, .service = "netbios-ns", .protocol = SCAN_PROTO_UDP, .required = 1,
+        .device_type = HOST_TYPE_PC, .query_payload = {sizeof(UDP_QUERY_NBS), UDP_QUERY_NBS} },
+    //experimenting, never contacted -dgm before
+    {.port = 138, .service = "netbios-dgm", .protocol = SCAN_PROTO_UDP, .required = 1,
         .device_type = HOST_TYPE_PC, .query_payload = {sizeof(UDP_QUERY_NBS), UDP_QUERY_NBS} },
     {.port = 445, .service = "smb", .protocol = SCAN_PROTO_TCP, .required = 1,
         .device_type = HOST_TYPE_PC},
     {.port = 53, .service = "dns", .protocol = SCAN_PROTO_UDP, .required = 1,
         .device_type = HOST_TYPE_ROUTER, .query_payload = {sizeof(UDP_QUERY_DNS), UDP_QUERY_DNS} },
+    {.port = 4070, .service = "alexa-4070", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_SMART_DEVICE},
+    {.port = 67, .service = "alexa-67", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_SMART_DEVICE},
+    {.port = 68, .service = "alexa-68", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_SMART_DEVICE},
+    {.port = 40317, .service = "alexa-40317", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_SMART_DEVICE},
+    {.port = 55442, .service = "alexa-55442", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_SMART_DEVICE},
+    {.port = 55443, .service = "alexa-55443", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_SMART_DEVICE},
     {.port = 62078, .service = "itunes", .protocol = SCAN_PROTO_TCP, .required = 1,
         .device_type = HOST_TYPE_PHONE},
     {.port = 60000, .service = "amazon", .protocol = SCAN_PROTO_TCP, .required = 1,
@@ -54,36 +75,52 @@ static const scan_port scan_port_list[] = {
         .device_type = HOST_TYPE_PC},
     {.port = 5000, .service = "upnp-root", .protocol = SCAN_PROTO_TCP, .required = 1,
         .device_type = HOST_TYPE_UNKNOWN},
-    {.port = 6668, .service = "tuya", .protocol = SCAN_PROTO_TCP, .required = 0,
+    {.port = 633, .service = "ipp", .protocol = SCAN_PROTO_TCP, .required = 1,
+        .device_type = HOST_TYPE_PRINTER},
+    {.port = 6668, .service = "tuya", .protocol = SCAN_PROTO_TCP, .required = 1,
         .device_type = HOST_TYPE_SMART_DEVICE},
     //{.port = 5353, .service = "mdns", .protocol = SCAN_PROTO_TCP, .required = 0,
     //    .device_type = HOST_TYPE_PC},
-    {.port = 5357, .service = "wsd", .protocol = SCAN_PROTO_TCP, .required = 0,
+    {.port = 5357, .service = "wsd", .protocol = SCAN_PROTO_TCP, .required = 1,
         .device_type = HOST_TYPE_PC_WIN},
-    {.port = 5040, .service = "?", .protocol = SCAN_PROTO_TCP, .required = 0,
+    {.port = 5040, .service = "?-5040", .protocol = SCAN_PROTO_TCP, .required = 0,
         .device_type = HOST_TYPE_PC},
-    {.port = 5948, .service = "?", .protocol = SCAN_PROTO_TCP, .required = 0, 
+    {.port = 5948, .service = "?-5948", .protocol = SCAN_PROTO_TCP, .required = 0, 
         .device_type = HOST_TYPE_PC},
-    {.port = 7680, .service = "?", .protocol = SCAN_PROTO_TCP, .required = 0,
+    {.port = 7680, .service = "?-7680", .protocol = SCAN_PROTO_TCP, .required = 0,
+        .device_type = HOST_TYPE_PC},
+    {.port = 70, .service = "gopher", .protocol = SCAN_PROTO_TCP, .required = 0,
         .device_type = HOST_TYPE_PC},
 };
 
 
 static const scan_listen_port scan_listen_list[] = {
-//     {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
-//         .min_time = 1000, .max_time = 5000, .bind_port = 0,
-//         .mc_join = 1, .mc_ip = "239.255.255.250",
-//         .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
-//     },
+    {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
+        .min_time = 100, .max_time = 2000, .bind_port = 0,
+        .mc_join = 1, .mc_ip = "239.255.255.250",
+        .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
+    },
+    {.port.port = 5353, .port.service = "mdns-mc", .port.required = 1,
+        .min_time = 200, .max_time = 2000, .bind_port = 5353,
+        .mc_join = 1, .mc_ip = "224.0.0.251",
+        .query_cb = NULL, .response_cb = NULL
+    },
     {.port.port = 5353, .port.service = "mdns", .port.required = 1,
-        .min_time = 100, .max_time = 3000, .bind_port = 0,
+        .min_time = 100, .max_time = 2000, .bind_port = 0,
         .mc_join = 0, .mc_ip = "224.0.0.251",
         .query_cb = probe_mdns_query, .response_cb = probe_mdns_response
     },
-/*        {.port.port = 6667, .port.service = "tuya", .port.required = 1,
-                .port.device_type = HOST_TYPE_SMART_DEVICE,
-                .min_time = 5000, .max_time = 25000, .bind_port = 6667},
-*/
+    {.port.port = 6771, .port.service = "bittorrent-lsd", .port.required = 1,
+        .min_time = 200, .max_time = 2000, .bind_port = 6771,
+        .mc_join = 1, .mc_ip = "239.192.152.143",
+        .query_cb = NULL, .response_cb = NULL
+    },
+    {.port.port = 6667, .port.service = "tuya-bc", .port.required = 1,
+        .port.device_type = HOST_TYPE_SMART_DEVICE,
+        .min_time = 200, .max_time = 2000, .bind_port = 6667,
+        .mc_join = 0,
+        .query_cb = NULL, .response_cb = scan_response_ack
+    },
 };
 
 
@@ -174,20 +211,17 @@ void scan_result_destroy(scan_result *result) {
 }
 
 
-void scan_print_mates(nmlist *hosts) {
+void scan_print_mates(nmlist *hosts, bool showtotal) {
     if(hosts == NULL)
         return;
 
     uint numentries = 0;
     nm_list_foreach(entry, hosts) {
         numentries++;
-//         nm_host *entry;
-//         for(int i=0; i < hosts->len; i++){
-//             entry = nm_host_array_index(hosts, i);
-            nm_host_print((nm_host *)entry->data);
-//         }
+        nm_host_print((nm_host *)entry->data);
     }
-    printf("Total Network Mates: %d  \n", numentries);
+    if(showtotal)
+        printf("Total Network Mates: %d  \n", numentries);
 
 }
 
@@ -382,16 +416,22 @@ int probe_sendrecv_udp(const char *thread_id, scan_result *result,
         result->services = nm_list_add(result->services, strdup(port_def->service));
         log_trace("%s host found, receive from port %hu", 
                     thread_id, port_def->port);
-//     }else if(poll_ret == 0){    //poll timed out
-//         log_trace("%s\t poll-udp - timeout, port %i",
-//                   thread_id, port_def->port);
-//     }else{      //poll error
-//         log_trace("%s\t poll-udp - error with port %i, error errno: %i, errdesc: %s", 
-//                  thread_id, port_def->port, errno, strerror(errno));
     }
     
     close(sd);
     return 0;
+}
+
+bool scan_response_ack(scan_result *result, const uint8_t *in_buffer, ssize_t in_size) {
+    //log_trace("scan_response_ack: host type: %i", result->host_type);
+    result->response = SCAN_HSTATE_LIVE;
+    return true;
+}
+
+bool scan_response_log(scan_result *result, const uint8_t *in_buffer, ssize_t in_size) {
+    result->response = SCAN_HSTATE_LIVE;
+    nm_log_trace_bytes("scan_log_response", in_buffer, in_size);
+    return true;
 }
 
 void scan_process_result(scan_result *result, int *live_counter) {
@@ -434,8 +474,6 @@ gpointer scan_main_listen_thread(gpointer data){
     log_trace("scan_main_listen_thread starting");
     unsigned long start_time = nm_time_ms();
 
-    if(scan.quit_now)
-        return NULL;
 
     int num_listen_ports = sizeof(scan_listen_list) / sizeof(scan_listen_list[0]);
     int num_results = 0, num_live = 0;
@@ -444,6 +482,8 @@ gpointer scan_main_listen_thread(gpointer data){
     GAsyncQueue *results_queue;
     GError *error = NULL;
 
+    if(!scan_util_is_running() || scan.quit_now)
+        return NULL;
     log_info("scan_main_listen_thread: range of %i ports", num_listen_ports);
 
     results_queue = g_async_queue_new();
@@ -457,6 +497,10 @@ gpointer scan_main_listen_thread(gpointer data){
 
     // push work to the thread pool
     for(int i = 0; i < num_listen_ports; i++) {
+        if(scan.quit_now)
+            return NULL;
+        if(!scan_util_is_running())
+            break;
         log_trace("scan_main_listen_thread, pushing work: %i", i);
         g_thread_pool_push(thread_pool, (gpointer)&scan_listen_list[i], &error);
         if(error != NULL){
@@ -472,6 +516,8 @@ gpointer scan_main_listen_thread(gpointer data){
     for(;;) {
         if(scan.quit_now)
             return NULL;
+        if(!scan_util_is_running())
+            break;
 
         //check work done by the thread pool
         unused_work = g_thread_pool_unprocessed(thread_pool);
@@ -489,6 +535,7 @@ gpointer scan_main_listen_thread(gpointer data){
         usleep(scan.opt_poll_thread_work_us);
         if(nm_time_ms_diff(start_time) > scan_timeout_ms){
             log_info("scan_main_listen_thread: Subnet scan timeout reached %u ms \n", scan_timeout_ms);
+            scan.running = 0;
             break;
         }
     }
@@ -503,6 +550,8 @@ gpointer scan_main_listen_thread(gpointer data){
     for(int i=0; i<returned_count; i++){
         if(scan.quit_now)
             return NULL;
+        if(!scan_util_is_running())
+            break;
         result = g_async_queue_pop(results_queue);
         scan_process_result(result, &num_live);
         num_results++;
@@ -538,10 +587,8 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
     GAsyncQueue *results_queue;
 
     thread_start = nm_time_ms();
-    if(!scan_util_is_running()) {
-        log_debug("scan_listen_thread: not running?");
+    if(!scan_util_is_running() || scan.quit_now)
         return;
-    }
 
     //prepare results and listen port
     results_queue = results_data;
@@ -590,7 +637,7 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
         return;
     }
 
-    if(!scan_util_is_running())
+    if(!scan_util_is_running() || scan.quit_now)
         return;
 
     if(listen_port->query_cb){
@@ -605,6 +652,8 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
     log_debug("%s Listening on port %hi", thread_signature, port_num);
 
     while (nm_time_ms_diff(thread_start) <= max_wait_time){
+        if(scan.quit_now)
+            return;
         if(!scan_util_is_running())
             break;
 
@@ -660,7 +709,7 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
         if(listen_port->response_cb != NULL){
             log_trace("%s Executing response callback", thread_signature);
             //TODO: process probe results
-            if(!(listen_port->response_cb)(result, recv_buffer, actual_size))
+            if(!(listen_port->response_cb)(result, (uint8_t*)recv_buffer, actual_size))
                 log_trace("%s Error with response callback", thread_signature);
         }
         
@@ -684,7 +733,7 @@ gpointer scan_main_connect_thread(gpointer data){
     GAsyncQueue *results_queue;
     GError *error = NULL;
 
-    if(scan.quit_now)
+    if(!scan_util_is_running() || scan.quit_now)
         return NULL;
 
     if (scan.localhost == NULL || scan.localhost->type != HOST_TYPE_LOCALHOST){
@@ -717,6 +766,8 @@ gpointer scan_main_connect_thread(gpointer data){
     for(curr_num = range.start_num; curr_num <= range.stop_num; curr_num++){
         if(scan.quit_now)
             return NULL;
+        if(!scan_util_is_running())
+            break;
 
         curr_addr = ntohl(curr_num);
         // stop skipping localhost and scan it too
@@ -735,7 +786,9 @@ gpointer scan_main_connect_thread(gpointer data){
     uint32_t unused_work, running_threads, returned_count;
     for(;;) {
         if(scan.quit_now)
-            return false;
+            return NULL;
+        if(!scan_util_is_running())
+            break;
 
         //check work done by the thread pool
         unused_work = g_thread_pool_unprocessed(thread_pool);
@@ -751,6 +804,7 @@ gpointer scan_main_connect_thread(gpointer data){
         }
         usleep(scan.opt_poll_thread_work_us);
         if(nm_time_ms_diff(start_time) > scan_timeout_ms){
+            scan.running = 0;
             log_info("scan_main_connect_thread: Subnet scan timeout reached %u ms \n", scan_timeout_ms);
             break;
         }
@@ -760,7 +814,9 @@ gpointer scan_main_connect_thread(gpointer data){
     returned_count = g_async_queue_length(results_queue);
     for(int i=0; i<returned_count; i++){
         if(scan.quit_now)
-            return false;
+            return NULL;
+        if(!scan_util_is_running())
+            break;
         result = g_async_queue_pop(results_queue);
         scan_process_result(result, &num_live);
         num_scanned++;
@@ -814,10 +870,13 @@ void scan_connect_thread(gpointer target_data, gpointer results_data) {
     port_index = 0;
     for(; port_index < ports_to_scan; port_index++){
         if(scan.quit_now)
+            return;
+        if(!scan_util_is_running())
             break;
 
         port_def = scan_port_list[port_index];
-        if(result->response == SCAN_HSTATE_LIVE && port_def.required == 0)
+        if(result->response == SCAN_HSTATE_LIVE && port_def.required == 0 &&
+            !scan.opt_scan_all)
             break;
         
         //connect_start = nm_time_ms();
@@ -1200,11 +1259,11 @@ void scan_start() {
     assert(scan.init == 1);
 
     if(scan_util_is_running()){
-        puts("scan_start: Already running");
+        puts("scan_start: already running");
         return;
     }
     scan.running = 1;
-    
+    unsigned long starttime = nm_time_ms();
 
     if(!scan_list_localhost())
         log_info("Could not resolve localhost address details");
@@ -1217,19 +1276,20 @@ void scan_start() {
     
     if(scan.opt_print_known_first || scan.opt_scan_known_only){
         puts("----- Known Lists ----->");
-        scan_print_mates(scan.hosts);
+        scan_print_mates(scan.hosts, true);
+        return;
     }
     
     if(!scan.opt_scan_known_only){
-        printf("> Starting scan...");
+        printf("Starting scan...\n");
         scan_discover_subnet(scan.opt_connect_threads > 0, scan.opt_listen_threads > 0);
-        
-        puts("Done!");
-        puts("Scan Results: ------------------------------");
-        scan_print_mates(scan.hosts);
+        puts("  Results: --");
+        scan_print_mates(scan.hosts, false);
     }
     
     scan.running = 0;
+    printf("Scan done in %.1fs with %i hosts found\n", 
+           nm_time_ms_diff(starttime) / 1000.0f, nm_list_len(scan.hosts));
 
     log_debug("scan_start: end");
 
@@ -1241,7 +1301,8 @@ void scan_stop(){
         scan.quit_now = 1;
 }
 
-void scan_init(int print_known_first, int print_known_only, int skip_resolve,
+void scan_init(int print_known_first, int print_known_only, int scan_all,
+               int skip_resolve,
                int conn_threads, int conn_timeout, int max_hosts, 
                int list_threads, int subnet_timeout, int subnet_offset) {
     if(scan.init)
@@ -1251,6 +1312,7 @@ void scan_init(int print_known_first, int print_known_only, int skip_resolve,
     scan.opt_print = true;
     if(print_known_first) scan.opt_print_known_first = true;
     if(print_known_only) scan.opt_scan_known_only = true;
+    if(scan_all) scan.opt_scan_all = true;
     if(skip_resolve) scan.opt_skip_resolve = true;
     if(conn_threads > -1) scan.opt_connect_threads = conn_threads;
     if(conn_timeout > -1) scan.opt_connect_timeout_ms = conn_timeout;
