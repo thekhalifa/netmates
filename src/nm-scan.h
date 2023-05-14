@@ -77,8 +77,8 @@ typedef struct{
     int opt_connect_threads;
     int opt_connect_timeout_ms;
     int opt_listen_threads;
-    int opt_subnet_timeout_ms;
-    int opt_poll_thread_work_us;
+    int opt_scan_timeout_ms;
+    int opt_poll_thread_work_ms;
     int opt_max_hosts;
     int opt_subnet_offset;
     //scanner_callback event_cb;
@@ -167,13 +167,15 @@ void            scan_connect_thread(gpointer target_data, gpointer results_data)
 
 bool            scan_discover_subnet(int connect, int listen);
 
+void            scan_init();
+// void            scan_init(int print_known_first, int print_known_only, int scan_all,
+//                           int skip_resolve,
+//                           int conn_threads, int conn_timeout, int max_hosts, 
+//                           int list_threads, int subnet_timeout, int subnet_offset);
+void            scan_destroy();
+scan_state     *scan_getstate();
 void            scan_start();
 void            scan_stop();
-void            scan_init(int print_known_first, int print_known_only, int scan_all,
-                          int skip_resolve,
-                          int conn_threads, int conn_timeout, int max_hosts, 
-                          int list_threads, int subnet_timeout, int subnet_offset);
-void            scan_destroy();
 
 
 

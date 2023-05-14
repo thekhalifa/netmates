@@ -2,21 +2,21 @@
 #include "nm-common.h"
 
 static scan_state scan = {
-        .init = 0,
-        .running = 0,
-        .quit_now = 0,
-        .opt_print = 0,
-        .opt_print_known_first = 0,
-        .opt_scan_known_only = 0,
-        .opt_scan_all = 0,
-        .opt_skip_resolve = 0,
-        .opt_connect_threads = 255,
-        .opt_connect_timeout_ms = 500,
+//         .init = 0,
+//         .running = 0,
+//         .quit_now = 0,
+//         .opt_print = 0,
+//         .opt_print_known_first = 0,
+//         .opt_scan_known_only = 0,
+//         .opt_scan_all = 0,
+//         .opt_skip_resolve = 0,
+        .opt_connect_threads = 8,
+        .opt_connect_timeout_ms = 100,
         .opt_listen_threads = 10,
-        .opt_subnet_timeout_ms = 2000,
-        .opt_poll_thread_work_us = 10000,
-        .opt_max_hosts = 0,
-        .opt_subnet_offset = 0
+        .opt_scan_timeout_ms = 10000,
+        .opt_poll_thread_work_ms = 10,
+//         .opt_max_hosts = 0,
+//         .opt_subnet_offset = 0
 };
 
 // // 5357/tcp open  wsdapi
@@ -95,32 +95,32 @@ static const scan_port scan_port_list[] = {
 
 
 static const scan_listen_port scan_listen_list[] = {
-    {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
-        .min_time = 100, .max_time = 2000, .bind_port = 0,
-        .mc_join = 1, .mc_ip = "239.255.255.250",
-        .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
-    },
+//     {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
+//         .min_time = 100, .max_time = 2000, .bind_port = 0,
+//         .mc_join = 1, .mc_ip = "239.255.255.250",
+//         .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
+//     },
     {.port.port = 5353, .port.service = "mdns-mc", .port.required = 1,
-        .min_time = 200, .max_time = 2000, .bind_port = 5353,
+        .min_time = 200, .max_time = 30000, .bind_port = 5353,
         .mc_join = 1, .mc_ip = "224.0.0.251",
         .query_cb = NULL, .response_cb = NULL
     },
-    {.port.port = 5353, .port.service = "mdns", .port.required = 1,
-        .min_time = 100, .max_time = 2000, .bind_port = 0,
-        .mc_join = 0, .mc_ip = "224.0.0.251",
-        .query_cb = probe_mdns_query, .response_cb = probe_mdns_response
-    },
-    {.port.port = 6771, .port.service = "bittorrent-lsd", .port.required = 1,
-        .min_time = 200, .max_time = 2000, .bind_port = 6771,
-        .mc_join = 1, .mc_ip = "239.192.152.143",
-        .query_cb = NULL, .response_cb = NULL
-    },
-    {.port.port = 6667, .port.service = "tuya-bc", .port.required = 1,
-        .port.device_type = HOST_TYPE_SMART_DEVICE,
-        .min_time = 200, .max_time = 2000, .bind_port = 6667,
-        .mc_join = 0,
-        .query_cb = NULL, .response_cb = scan_response_ack
-    },
+//     {.port.port = 5353, .port.service = "mdns", .port.required = 1,
+//         .min_time = 100, .max_time = 2000, .bind_port = 0,
+//         .mc_join = 0, .mc_ip = "224.0.0.251",
+//         .query_cb = probe_mdns_query, .response_cb = probe_mdns_response
+//     },
+//     {.port.port = 6771, .port.service = "bittorrent-lsd", .port.required = 1,
+//         .min_time = 200, .max_time = 2000, .bind_port = 6771,
+//         .mc_join = 1, .mc_ip = "239.192.152.143",
+//         .query_cb = NULL, .response_cb = NULL
+//     },
+//     {.port.port = 6667, .port.service = "tuya-bc", .port.required = 1,
+//         .port.device_type = HOST_TYPE_SMART_DEVICE,
+//         .min_time = 200, .max_time = 2000, .bind_port = 6667,
+//         .mc_join = 0,
+//         .query_cb = NULL, .response_cb = scan_response_ack
+//     },
 };
 
 
@@ -289,7 +289,22 @@ int scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size) 
     return 0;
 }
 
+int scan_socket_bind(int sd, uint16_t port, char *logsign) {
+    
+    log_trace("%s Binding to port %i", logsign, port);
+    struct sockaddr_in addr;
+    
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+    if(bind(sd, (struct sockaddr *) & addr, sizeof(addr)) < 0){
+        log_debug("%s Could not bind to port %i, errno: %i, errdesc: %s \n",
+                  logsign, port, errno, strerror(errno));
+        return errno;
+    }
 
+    return 0;
+}
 
 int probe_connect_tcp(const char *thread_id, scan_result *result, 
                           scan_port *port_def, struct in_addr ip_addr) {
@@ -477,7 +492,7 @@ gpointer scan_main_listen_thread(gpointer data){
 
     int num_listen_ports = sizeof(scan_listen_list) / sizeof(scan_listen_list[0]);
     int num_results = 0, num_live = 0;
-    int scan_timeout_ms = scan.opt_subnet_timeout_ms;
+    int scan_timeout_ms = scan.opt_scan_timeout_ms;
     GThreadPool *thread_pool;
     GAsyncQueue *results_queue;
     GError *error = NULL;
@@ -532,7 +547,7 @@ gpointer scan_main_listen_thread(gpointer data){
             num_results++;
         }
         //log_trace("scan_main_listen_thread, going to sleep: num_results: %i", num_results);
-        usleep(scan.opt_poll_thread_work_us);
+        usleep(scan.opt_poll_thread_work_ms * 1000);
         if(nm_time_ms_diff(start_time) > scan_timeout_ms){
             log_info("scan_main_listen_thread: Subnet scan timeout reached %u ms \n", scan_timeout_ms);
             scan.running = 0;
@@ -543,7 +558,7 @@ gpointer scan_main_listen_thread(gpointer data){
     log_trace("scan_main_listen_thread, about to free pool: running_threads: %i", running_threads);
     g_thread_pool_free(thread_pool, false, true);
 
-    usleep(scan.opt_poll_thread_work_us * 10);
+    usleep(scan.opt_poll_thread_work_ms * 1000);
     log_trace("scan_main_listen_thread final queue processing...");
     returned_count = g_async_queue_length(results_queue);
     log_trace("scan_main_listen_thread       queue length: %i", returned_count);
@@ -625,13 +640,14 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
                       thread_signature, errno, strerror(errno));
     }
 
-    log_trace("%s Binding to port %i", thread_signature, listen_port->bind_port);
-    bind_addr.sin_family = AF_INET;
-    bind_addr.sin_addr.s_addr = INADDR_ANY;
-    bind_addr.sin_port = htons(listen_port->bind_port);
-    if(bind(sd, (struct sockaddr *) & bind_addr, sizeof(bind_addr)) < 0){
-        log_debug("%s Could not bind to port %i, errno: %i, errdesc: %s \n",
-                  thread_signature, port_num, errno, strerror(errno));
+    if(scan_socket_bind(sd, listen_port->bind_port, thread_signature) < 0){
+//     log_trace("%s Binding to port %i", thread_signature, listen_port->bind_port);
+//     bind_addr.sin_family = AF_INET;
+//     bind_addr.sin_addr.s_addr = INADDR_ANY;
+//     bind_addr.sin_port = htons(listen_port->bind_port);
+//     if(bind(sd, (struct sockaddr *) & bind_addr, sizeof(bind_addr)) < 0){
+//         log_debug("%s Could not bind to port %i, errno: %i, errdesc: %s \n",
+//                   thread_signature, port_num, errno, strerror(errno));
         log_debug("%s End listen thread [time: %lu ms]!",
                   thread_signature, nm_time_ms_diff(thread_start));
         return;
@@ -727,7 +743,7 @@ gpointer scan_main_connect_thread(gpointer data){
 
     uint32_t curr_addr, curr_num;
     int num_scanned = 0, num_live = 0;
-    int scan_timeout_ms = scan.opt_subnet_timeout_ms;
+    int scan_timeout_ms = scan.opt_scan_timeout_ms;
 
     GThreadPool *thread_pool;
     GAsyncQueue *results_queue;
@@ -802,7 +818,7 @@ gpointer scan_main_connect_thread(gpointer data){
             scan_process_result(result, &num_live);
             num_scanned++;
         }
-        usleep(scan.opt_poll_thread_work_us);
+        usleep(scan.opt_poll_thread_work_ms * 1000);
         if(nm_time_ms_diff(start_time) > scan_timeout_ms){
             scan.running = 0;
             log_info("scan_main_connect_thread: Subnet scan timeout reached %u ms \n", scan_timeout_ms);
@@ -1301,25 +1317,24 @@ void scan_stop(){
         scan.quit_now = 1;
 }
 
-void scan_init(int print_known_first, int print_known_only, int scan_all,
-               int skip_resolve,
-               int conn_threads, int conn_timeout, int max_hosts, 
-               int list_threads, int subnet_timeout, int subnet_offset) {
+void scan_init(){
+// void scan_init(int print_known_first, int print_known_only, int scan_all,
+//                int skip_resolve,
+//                int conn_threads, int conn_timeout, int max_hosts, 
+//                int list_threads, int subnet_timeout, int subnet_offset) {
     if(scan.init)
         return;
 
-    //if(print_stdout) scan.opt_print = true;
-    scan.opt_print = true;
-    if(print_known_first) scan.opt_print_known_first = true;
-    if(print_known_only) scan.opt_scan_known_only = true;
-    if(scan_all) scan.opt_scan_all = true;
-    if(skip_resolve) scan.opt_skip_resolve = true;
-    if(conn_threads > -1) scan.opt_connect_threads = conn_threads;
-    if(conn_timeout > -1) scan.opt_connect_timeout_ms = conn_timeout;
-    if(max_hosts > -1) scan.opt_max_hosts = max_hosts;
-    if(list_threads > -1) scan.opt_listen_threads = list_threads;
-    if(subnet_timeout > -1) scan.opt_subnet_timeout_ms = subnet_timeout;
-    if(subnet_offset > -1) scan.opt_subnet_offset = subnet_offset;
+//     if(print_known_first) scan.opt_print_known_first = true;
+//     if(print_known_only) scan.opt_scan_known_only = true;
+//     if(scan_all) scan.opt_scan_all = true;
+//     if(skip_resolve) scan.opt_skip_resolve = true;
+//     if(conn_threads > -1) scan.opt_connect_threads = conn_threads;
+//     if(conn_timeout > -1) scan.opt_connect_timeout_ms = conn_timeout;
+//     if(max_hosts > -1) scan.opt_max_hosts = max_hosts;
+//     if(list_threads > -1) scan.opt_listen_threads = list_threads;
+//     if(subnet_timeout > -1) scan.opt_subnet_timeout_ms = subnet_timeout;
+//     if(subnet_offset > -1) scan.opt_subnet_offset = subnet_offset;
 
 
     vendor_db_init();
@@ -1336,7 +1351,7 @@ void scan_init(int print_known_first, int print_known_only, int scan_all,
     log_debug("  conn_timeout:  %2i (ms)", scan.opt_connect_timeout_ms);
     log_debug("  list_thread:   %2i", scan.opt_listen_threads);
     log_debug("  max_hosts:     %i", scan.opt_max_hosts);
-    log_debug("  scan_timeout:  %i (ms)", scan.opt_subnet_timeout_ms);
+    log_debug("  scan_timeout:  %i (ms)", scan.opt_scan_timeout_ms);
     
     
 }
@@ -1356,3 +1371,6 @@ void scan_destroy(void) {
     scan.init = 0;
 }
 
+scan_state * scan_getstate() {
+    return &scan;
+}
