@@ -61,6 +61,7 @@ void        nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *net
                                    char *hw_addr, char *hostname);
 void        nm_host_add_services(nm_host *host, nmlist *services);
 void        nm_host_print(nm_host *host);
+void        nm_host_print_wide(nm_host *host);
 const char *nm_host_label(nm_host *host);
 
 /* entry merge functions */

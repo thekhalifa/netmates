@@ -1,14 +1,15 @@
 #include <signal.h>
-
 #include "nm-scan.h"
 
-/* Application argument defaults */
+#define NM_APP_NAME "nmlite"
 
+/* Application argument defaults */
 struct {
     int log_level;
     bool arg_known_only;
-    bool arg_scan_all;
     bool arg_known_first;
+    bool arg_scan_only;
+    bool arg_scan_all;
     bool arg_skip_resolve;
     int arg_conn_threads;
     int arg_conn_timeout;
@@ -17,14 +18,15 @@ struct {
     int arg_scan_timeout;
     int arg_subnet_offset;
 }  nm_app = {
-    .log_level = LOG_DEBUG,
+    .log_level = LOG_ERROR,
     .arg_known_only = false,
     .arg_known_first = false,
     .arg_skip_resolve = false,
+    .arg_scan_only = false,
     .arg_scan_all = true,
     .arg_scan_timeout = 5000,
     .arg_max_hosts = -1,
-    .arg_conn_timeout = 100,
+    .arg_conn_timeout = 200,
     .arg_conn_threads = 1,
     .arg_list_threads = 0,
     .arg_subnet_offset = -1,
@@ -32,45 +34,36 @@ struct {
 
 void print_usage() {
     printf("Usage: \n"
-    "    nmlite [options]\n"
-    "    \n"
-    "    Options: \n"
-    "       -g     print debug messages\n"
-    "       -h     help message (this one)\n"
+    "\n"
+    "    "NM_APP_NAME" [options]\n"
+    "  \n"
+    "Options: \n"
+    "    -k, --known-only            print known hosts only, no scan\n"
+    "    -K, --known-first           print known hosts first then scan\n"
+    "    -s, --scan-only             print scan results only, no known hosts\n"
+    "    -S, --scan-all              scan using all methods even if host is live\n"
+    "    -n, --skip-resolve          skip resolving hosts and show numeric values\n"
+    "\n"
+    "    -t, --scan-timeout <N>      scan timeout in milliseconds\n"
+    "    -T, --connect-timeout <N>   connect scan timeout in milliseconds\n"
+    "    -c, --connect-threads <N>   number of connect threads. Set to 0 to skip connecting\n"
+    "    -l, --listen-threads <N>    number of listen threads. Set to 0 to skip listening\n"
+    "    -m, --max-hosts <N>         max number of host ipv4 to scan within the subnet\n"
+    "    -o, --subnet-offset <N>     offset the first host scan ipv4\n"
+    "\n"
+    "    -g, --debug                 print debug messages\n"
+    "    -G, --trace                 print trace messages\n"
+    "    -h, --help                  help message (this one)\n"
     "\n");
 }
 
-/*
- * 
-    const GOptionEntry cmd_options[] = {
-            {"cli", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &nm_app.arg_cli,
-                                "Run CLI only, no GUI. This is the default option when running as '" NM_APP_CLI_NAME "'.", NULL},
-            {"gui", 'g', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &nm_app.arg_gui,
-                                "Run the GUI. This is the default when command name is not '" NM_APP_CLI_NAME "'", NULL},
-            {"scan-timeout", 'T', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &nm_app.arg_scan_to,
-                    "Maximum time to spend scanning, either connecting or listening, in seconds.", NULL},
-            {"max-hosts", 'm', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &nm_app.arg_max_hosts,
-                        "IPv4 maximum number of subnet hosts to scan. Defaults to the full subnet up to 254 (/24).", NULL},
-            {"known-only", 'k', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &nm_app.arg_known_only,
-                                "Show and resolve Known Hosts only based on kernel data.", NULL},
-            {"known-first", 'f', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &nm_app.arg_known_first,
-                                "Show details of Known Hosts first based on kernel data as that is "
-                                "quick then proceed to scan the network.", NULL},
-            {"numeric", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &nm_app.arg_skip_resolve,
-                    "Skip resolving hostnames and hw vendors.", NULL},
-            {"connect-threads", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &nm_app.arg_conn_th,
-                    "Maximum number of connection threads to use when scanning.", NULL},
-            {"connect-timeout", 't', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &nm_app.arg_conn_to,
-                    "Maximum time to wait for a response from a specific port in milliseconds.", NULL},
-            {"listen-threads", 'l', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &nm_app.arg_list_th,
-                    "Maximum number of listening threads to use when scanning.", NULL},
-    };
-*/
+void exit_arg_error(char *option, char * argument) {
+    printf("Invalid value: %s for argument: %s\n\n", argument, option);
+    exit(1);
+}
 
-
-int process_args(int argc, char *argv[]) {
+void process_args(int argc, char *argv[]) {
     int arg_index = 1;
-    int shouldRun = 0;
     
     while(arg_index < argc){
         char *option   = argv[arg_index];
@@ -80,71 +73,68 @@ int process_args(int argc, char *argv[]) {
             argument = argv[arg_index + 1];
         }
 
-        if(!strcmp(option, "-h")){
+        if(!strcmp(option, "-h") || !strcmp(option, "--help")){
             print_usage();
             exit(0);
-        }else if(!strcmp(option, "-g")){
-            log_set_level(LOG_WARN);
-        }else if(!strcmp(option, "-g1")){
+        }else if(!strcmp(option, "-g") || !strcmp(option, "--debug")){
             log_set_level(LOG_DEBUG);
-        }else if(!strcmp(option, "-g2")){
+        }else if(!strcmp(option, "-G") || !strcmp(option, "--trace")){
             log_set_level(LOG_TRACE);
-//         }else if(!strcmp(option, "-dpi")){
-//             if(strlen(argument) > 0)
-//                 cli_requested_dpi = atoi(argument) - 1;
-//             run_action = RUN_ACTION_SET;
-//             arg_index++;
-//         }else if(!strcmp(option, "-led")){
-//             if(strlen(argument) > 0)
-//                 cli_requested_led = atoi(argument) - 1;
-//             run_action = RUN_ACTION_SET;
-//             arg_index++;
-//         }else if(!strcmp(option, "-speed")){
-//             if(strlen(argument) > 0)
-//                 cli_requested_speed = atoi(argument) - 1;
-//             run_action = RUN_ACTION_SET;
-//             arg_index++;
+        }else if(!strcmp(option, "-k") || !strcmp(option, "--known-only")){
+            nm_app.arg_known_only = true;
+        }else if(!strcmp(option, "-K") || !strcmp(option, "--known-first")){
+            nm_app.arg_known_first = true;
+        }else if(!strcmp(option, "-s") || !strcmp(option, "--scan-only")){
+            nm_app.arg_scan_only = true;
+        }else if(!strcmp(option, "-S") || !strcmp(option, "--scan-all")){
+            nm_app.arg_scan_all = true;
+        }else if(!strcmp(option, "-n") || !strcmp(option, "--skip-resolve")){
+            nm_app.arg_skip_resolve = true;
+        }else if(!strcmp(option, "-c") || !strcmp(option, "--connect-threads")){
+            if(strlen(argument) > 0 && isdigit(argument[0]))
+                nm_app.arg_conn_threads = atoi(argument);
+            else
+                exit_arg_error(option, argument);
+            arg_index++;
+        }else if(!strcmp(option, "-l") || !strcmp(option, "--listen-threads")){
+            if(strlen(argument) > 0)
+                nm_app.arg_list_threads = atoi(argument);
+            else
+                exit_arg_error(option, argument);
+            arg_index++;
+        }else if(!strcmp(option, "-t") || !strcmp(option, "--scan-timeout")){
+            if(strlen(argument) > 0)
+                nm_app.arg_scan_timeout = atoi(argument);
+            else
+                exit_arg_error(option, argument);
+            arg_index++;
+        }else if(!strcmp(option, "-T") || !strcmp(option, "--connect-timeout")){
+            if(strlen(argument) > 0)
+                nm_app.arg_conn_timeout = atoi(argument);
+            else 
+                exit_arg_error(option, argument);
+            arg_index++;
+        }else if(!strcmp(option, "-m") || !strcmp(option, "--max-hosts")){
+            if(strlen(argument) > 0)
+                nm_app.arg_max_hosts = atoi(argument);
+            else 
+                exit_arg_error(option, argument);
+            arg_index++;
+        }else if(!strcmp(option, "-o") || !strcmp(option, "--subnet-offset")){
+            if(strlen(argument) > 0)
+                nm_app.arg_subnet_offset = atoi(argument);
+            else 
+                exit_arg_error(option, argument);
+            arg_index++;
         }else{
             printf("Invalid argument: %s\n\n", option);
-            print_usage();
             exit(1);
         }
         arg_index++;
     }
-    
-    
-    return shouldRun;
 }
-
-/* Keeps the main loop running as the only source while the scan happens in a separate thread */
-/*
-static gboolean check_cli_running(gpointer data){
-    g_assert(nm_app.scan_thread != NULL);
-
-    if(!scan_util_is_running()){
-        g_thread_unref(nm_app.scan_thread);
-        return G_SOURCE_REMOVE;
-    }
-    usleep(500000);
-    return G_SOURCE_CONTINUE;
-}
-*/
-
-
-/*
-static gboolean on_signal_received (gpointer data){
-
-    void(*stop_scan)(void) = data;
-    g_message("Signal received, quitting!\n");
-    stop_scan();
-    g_application_quit(G_APPLICATION(nm_app.gtk_app));
-    return G_SOURCE_REMOVE;
-}
-*/
 
 void signal_handler(int signum){
-    //printf("Signal received, quitting!\n");
-
     psignal(signum, "Signal received, stopping scan and quitting.");
     scan_stop();
 }
@@ -154,8 +144,6 @@ static void signal_setup(){
     signal(SIGINT, signal_handler);
     return;
 }
-
-
 
 int init_application(int argc, char **argv){
 
@@ -168,10 +156,11 @@ int init_application(int argc, char **argv){
 
     scan_state *state = scan_getstate();
     state->opt_print = true;
-    state->opt_print_known_first = nm_app.arg_known_first;
-    state->opt_scan_known_only = nm_app.arg_known_only;
+    state->opt_known_first = nm_app.arg_known_first;
+    state->opt_known_only = nm_app.arg_known_only;
     state->opt_skip_resolve = nm_app.arg_skip_resolve;
 
+    state->opt_scan_only = nm_app.arg_scan_only;
     state->opt_scan_all = nm_app.arg_scan_all;
     state->opt_scan_timeout_ms = nm_app.arg_scan_timeout;
     state->opt_max_hosts = nm_app.arg_max_hosts;
@@ -181,26 +170,11 @@ int init_application(int argc, char **argv){
     state->opt_listen_threads = nm_app.arg_list_threads;
     
     scan_init();
-//     scan_init(nm_app.arg_known_first,
-//               nm_app.arg_known_only,
-//               nm_app.arg_scan_all,
-//               nm_app.arg_skip_resolve,
-//               nm_app.arg_conn_threads,
-//               nm_app.arg_conn_timeout,
-//               nm_app.arg_max_hosts,
-//               nm_app.arg_list_threads,
-//               nm_app.arg_scan_timeout,
-//               nm_app.arg_subnet_offset);
-    
-    //scan_start_cli_thread(NULL);
     scan_start();
     scan_destroy();
     return 0;
-    
 
 }
-
-
 
 int main (int argc, char **argv){
     return init_application(argc, argv);    

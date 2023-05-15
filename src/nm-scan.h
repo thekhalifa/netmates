@@ -17,41 +17,18 @@
 #include "nm-protocol.h"
 
 
-
-/* TODO: switch to probes? 
-typedef void    (*run_probe)(int type);
-
-typedef struct{
-    char name[64];
-    run_probe probe_cb;
-    int enabled;
-} scan_probe;
-
-
-static scan_probe probe_list[] = {
-    {"basic", NULL, 0},
-    {"extensive probe", NULL, 0},
-    {0},
-};
-
-*/
-
-
-
-enum scan_event {
-    SCAN_EVENT_START,
-    SCAN_EVENT_END,
-    SCAN_EVENT_UPDATE
-};
-
-enum scan_direction{
-    SCAN_DIR_CONNECT,
-    SCAN_DIR_LISTEN
-};
-
 enum scan_protocol{
     SCAN_PROTO_TCP,
     SCAN_PROTO_UDP
+};
+
+enum scan_method{
+    SCAN_NONE = 0,
+    SCAN_TCP_CONNECT,
+    SCAN_TCP_QUERY,
+    SCAN_TCP_LISTEN,
+    SCAN_UDP_SENDRECV,
+    SCAN_UDP_RECV,
 };
 
 enum scan_host_state{
@@ -61,17 +38,14 @@ enum scan_host_state{
     SCAN_HSTATE_ERROR
 };
 
-
-//typedef void    (*scanner_callback)(int type, void* data);
-
-
 typedef struct{
     int init;
     int running;
     int quit_now;
     int opt_print;
-    int opt_print_known_first;
-    int opt_scan_known_only;
+    int opt_known_first;
+    int opt_known_only;
+    int opt_scan_only;
     int opt_scan_all;
     int opt_skip_resolve;
     int opt_connect_threads;
@@ -94,54 +68,42 @@ typedef struct {
     struct in_addr stop_addr;
 } scan_range;
 
-typedef struct {
-    uint length;
-    const char * buffer;
-} scan_payload;
-
-typedef struct {
-    int port;
-    char *service;
-    int required;
-    enum scan_protocol protocol;
-    enum nm_host_type device_type;
-    const char *query_buffer;
-    scan_payload query_payload;
-} scan_port;
 
 
 typedef struct scan_result{
-    enum scan_direction direction;
     enum scan_host_state response;
     enum nm_host_type host_type;
     char *hostname;
     uint16_t port;
     struct in_addr target_addr;
     nmlist *services;
-} scan_result;
+}scan_result;
 
 
-typedef bool(*scan_query_callback)(int type, void* data);
+typedef int (*scan_query_callback)(char *buffer, size_t buffsize, char* data, struct in_addr);
 typedef bool(*scan_response_callback)(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
+
 typedef struct {
-    scan_port port;
+    enum scan_method method;
+    int port;
+    int required;
     int min_time;
     int max_time;
     int bind_port;
     int mc_join;
+    char *service;
     char *mc_ip;
-    //scan_query_callback *query_cb;
-    //bool(*query_cb)(int, void*);
+    proto_payload query_payload;
     scan_query_callback query_cb;
     scan_response_callback response_cb;
-} scan_listen_port;
+    enum nm_host_type host_type;
+    proto_def *protocol;
+} scan_port;
 
 
 /* Utils */
 bool            scan_util_is_running();
-int             scan_util_get_sock_error(int sd);
-int             scan_util_get_sock_info(int sd);
 bool            scan_util_calc_subnet_range(const char *ip, const char *netmask, scan_range *range);
 void            scan_result_destroy(scan_result *result);
 
@@ -168,10 +130,6 @@ void            scan_connect_thread(gpointer target_data, gpointer results_data)
 bool            scan_discover_subnet(int connect, int listen);
 
 void            scan_init();
-// void            scan_init(int print_known_first, int print_known_only, int scan_all,
-//                           int skip_resolve,
-//                           int conn_threads, int conn_timeout, int max_hosts, 
-//                           int list_threads, int subnet_timeout, int subnet_offset);
 void            scan_destroy();
 scan_state     *scan_getstate();
 void            scan_start();

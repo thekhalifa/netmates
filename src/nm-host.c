@@ -109,43 +109,6 @@ void nm_host_add_services(nm_host *host, nmlist *services) {
     host->list_services = nm_host_merge_field(NULL, NULL, host->list_services, services);
 }
 
-void nm_host_print2(nm_host *host) {
-    assert(host != NULL);
-    assert(host->ip != NULL || host->ip6 != NULL);
-
-    const char *type = nm_host_type_labels[host->type];
-
-    if(host->ip != NULL)
-        printf("+ Type: %-10s IPv4: [%s] \thostname: [%s]", type, host->ip, host->hostname);
-    else
-        printf("+ Type: %-10s IPv6: [%s] \thostname: [%s]", type, host->ip6, host->hostname);
-
-    if(host->hw_addr != NULL)
-        printf(" \t-- HW: %s", host->hw_addr);
-    if(host->type == HOST_TYPE_LOCALHOST)
-        printf(", Netmask: %s", host->netmask);
-    if(host->ip != NULL && host->ip6 != NULL)
-        printf(", IPv6: %s", host->ip6);
-    printf("\n");
-
-    char *other_label[] = {"Other IP", "Other IPv6", "Other HW", "Services"};
-    nmlist *other_list[] = {host->list_ip, host->list_ip6, host->list_hw_addr, host->list_services};
-    
-    int items = sizeof(other_label) / sizeof(other_label[0]);
-    for(int j=0; j<items; j++){
-        
-        if(other_list[j] == NULL || other_list[j]->data == NULL)
-            continue;
-        
-        printf("\t\t--%s: \t", other_label[j]);
-        
-        nm_list_foreach(node, other_list[j]) {
-            printf("%s%s", (char *)node->data, node->next ? ", ": "\n");
-        }
-            
-        
-    }
-}
 
 
 void nm_host_print(nm_host *host) {
@@ -179,9 +142,74 @@ void nm_host_print(nm_host *host) {
     nm_list_foreach(node, host->list_services)
         printf("%s ", (char *)node->data);
     printf("\n");
-
 }
 
+
+void nm_host_print_wide(nm_host *host) {
+    assert(host != NULL);
+    assert(host->ip != NULL || host->ip6 != NULL);
+
+    const char *type = nm_host_type_labels[host->type];
+    char *hostname = host->hostname ? host->hostname : "";
+    char *ip = host->ip ? host->ip : "";
+    char *ip6 = host->ip6 ? host->ip6 : "";
+    char *hw = host->hw_addr ? host->hw_addr : "";
+    
+    printf("+ %-8s-> %-15s\t%-22s\t%-12s\t%s\n",
+           type, ip, ip6, hostname, hw);
+    
+    nmlist *ipnode = host->list_ip;
+    nmlist *ip6node = host->list_ip6;
+    while(ipnode || ip6node) {
+        ip = ipnode ? ipnode->data : "";
+        ip6 = ip6node ? ip6node->data : "";
+        
+        printf("             %-15s\t%s-22\n", ip, ip6);
+        ipnode = ipnode ? ipnode->next : NULL;
+        ip6node = ip6node ? ip6node->next : NULL;
+    }
+
+    if(host->list_services) {
+        printf("             [");
+        nm_list_foreach(node, host->list_services)
+            printf("%s ", (char *)node->data);
+        printf("]\n");
+    }
+}
+
+
+void nm_host_print2(nm_host *host) {
+    assert(host != NULL);
+    assert(host->ip != NULL || host->ip6 != NULL);
+
+    const char *type = nm_host_type_labels[host->type];
+    if(host->ip != NULL)
+        printf("+ Type: %-10s IPv4: [%s] \thostname: [%s]", type, host->ip, host->hostname);
+    else
+        printf("+ Type: %-10s IPv6: [%s] \thostname: [%s]", type, host->ip6, host->hostname);
+
+    if(host->hw_addr != NULL)
+        printf(" \t-- HW: %s", host->hw_addr);
+    if(host->type == HOST_TYPE_LOCALHOST)
+        printf(", Netmask: %s", host->netmask);
+    if(host->ip != NULL && host->ip6 != NULL)
+        printf(", IPv6: %s", host->ip6);
+    printf("\n");
+
+    char *other_label[] = {"Other IP", "Other IPv6", "Other HW", "Services"};
+    nmlist *other_list[] = {host->list_ip, host->list_ip6, host->list_hw_addr, host->list_services};
+    
+    int items = sizeof(other_label) / sizeof(other_label[0]);
+    for(int j=0; j<items; j++){
+        if(other_list[j] == NULL || other_list[j]->data == NULL)
+            continue;
+        
+        printf("\t\t--%s: \t", other_label[j]);
+        nm_list_foreach(node, other_list[j]) {
+            printf("%s%s", (char *)node->data, node->next ? ", ": "\n");
+        }
+    }
+}
 
 void nm_host_print3(nm_host *host) {
     assert(host != NULL);

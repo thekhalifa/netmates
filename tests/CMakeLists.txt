@@ -46,6 +46,10 @@ target_include_directories(test_vendordb PRIVATE ${SOURCE_BASE})
 target_link_libraries(test_vendordb PkgConfig::glib)
 add_test(NAME vendordb COMMAND test_vendordb)
 
+add_executable(test_protocol test_protocol.c ${SOURCE_BASE}/nm-protocol.c ${COMMON_FILES})
+target_include_directories(test_protocol PRIVATE ${SOURCE_BASE})
+target_link_libraries(test_protocol PkgConfig::glib)
+add_test(NAME protocol COMMAND test_protocol)
 
 # Experiment with cunit
 #add_executable(test_basic test_basic.c)
