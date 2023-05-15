@@ -23,6 +23,10 @@ Other ports:
 - 7680
 5357/tcp open  wsdapi, 137/udp open  netbios-ns, 5040/tcp open  unknown
 5357/tcp open  wsdapi, 5948/tcp open  unknown, 7680/tcp open  pando-pub
+
+- KDE Connect, :1716
+- pcloud 40525
+
 */
 
 
@@ -35,7 +39,7 @@ static const scan_port scan_port_list[] = {
         .service = "https", .required = 1, .host_type = HOST_TYPE_PC},
     {.method = SCAN_UDP_SENDRECV, .port = 137,
         .service = "netbios-ns", .required = 1, .host_type = HOST_TYPE_PC,
-        .query_payload = { .length = sizeof(UDP_QUERY_NBS), .message = UDP_QUERY_NBS } },
+        .query_payload = { .length = sizeof(PROTO_NBS_QUERY), .message = PROTO_NBS_QUERY } },
     {.method = SCAN_TCP_CONNECT, .port = 5357,
         .service = "wsd", .required = 1, .host_type = HOST_TYPE_PC},
     {.method = SCAN_UDP_SENDRECV, .port = 53,
@@ -93,42 +97,45 @@ static const scan_port scan_port_list[] = {
 
 
 static const scan_port scan_listen_list[] = {
-//     {.port.port = 5353, .port.service = "mdns", .port.required = 1,
-//         .min_time = 100, .max_time = 2000, .bind_port = 0,
-//         .mc_join = 0, .mc_ip = "224.0.0.251",
-//         .query_cb = probe_mdns_query, .response_cb = probe_mdns_response
-//     },
     {.method = SCAN_UDP_SENDRECV, .port = 5353,
-        .service = "mdns", .required = 1,
-        .bind_port = 0, .mc_join = 0, .mc_ip = "224.0.0.251",
-        .min_time = 100, .max_time = 2000, 
+        .service = "mdns-s", .required = 1,
+        .bind_port = 0, .mc_join = 1, .mc_ip = "224.0.0.251",
+        .min_time = 100, .max_time = 10000, 
         .query_cb = probe_mdns_generate_query, .response_cb = probe_mdns_response,
         .protocol = &proto_mdns_definition,
     },
-//     {.method = SCAN_UDP_SENDRECV, .port = 5353,
-//         .service = "mdns-mc", .required = 1,
-//         .bind_port = 5353, .mc_join = 1, .mc_ip = "224.0.0.251",
-//         .min_time = 200, .max_time = 30000, 
-//         .query_cb = NULL, .response_cb = NULL,
-//         .protocol = &proto_mdns_definition,
-//     },
-
-//     {.port.port = 1900, .port.service = "ssdp", .port.required = 1,
-//         .min_time = 100, .max_time = 2000, .bind_port = 0,
-//         .mc_join = 1, .mc_ip = "239.255.255.250",
-//         .query_cb = probe_ssdp_query, .response_cb = probe_ssdp_response
-//     },
-//     {.port.port = 6771, .port.service = "bittorrent-lsd", .port.required = 1,
-//         .min_time = 200, .max_time = 2000, .bind_port = 6771,
-//         .mc_join = 1, .mc_ip = "239.192.152.143",
-//         .query_cb = NULL, .response_cb = NULL
-//     },
-//     {.port.port = 6667, .port.service = "tuya-bc", .port.required = 1,
-//         .port.device_type = HOST_TYPE_SMART_DEVICE,
-//         .min_time = 200, .max_time = 2000, .bind_port = 6667,
-//         .mc_join = 0,
-//         .query_cb = NULL, .response_cb = scan_response_ack
-//     },
+    {.method = SCAN_UDP_SENDRECV, .port = 5353,
+        .service = "mdns-l", .required = 1,
+        .bind_port = 5353, .mc_join = 0, .mc_ip = "224.0.0.251",
+        .min_time = 100, .max_time = 10000, 
+        .query_cb = NULL, .response_cb = probe_mdns_response,
+        .protocol = &proto_mdns_definition,
+    },
+    {.method = SCAN_UDP_SENDRECV, .port = 1900,
+        .service = "ssdp", .required = 1,
+        .bind_port = 0, .mc_join = 1, .mc_ip = "239.255.255.250",
+        .min_time = 100, .max_time = 10000, 
+        .query_cb = probe_string_generate_query, .response_cb = probe_ssdp_response,
+        .protocol = &proto_ssdp_definition,
+    },
+    {.method = SCAN_UDP_SENDRECV, .port = 1900,
+        .service = "ssdp", .required = 1,
+        .bind_port = 1900, .mc_join = 0, .mc_ip = "239.255.255.250",
+        .min_time = 100, .max_time = 10000, 
+        .query_cb = NULL, .response_cb = probe_ssdp_response,
+        .protocol = &proto_ssdp_definition,
+    },
+    {.method = SCAN_UDP_SENDRECV, .port = 6771,
+        .service = "bittorrent-lsd", .required = 1,
+        .bind_port = 6771, .mc_join = 1, .mc_ip = "239.192.152.143",
+        .min_time = 200, .max_time = 5000, 
+    },
+    {.method = SCAN_UDP_SENDRECV, .port = 6667,
+        .service = "bittorrent-lsd", .required = 1,
+        .bind_port = 6667, .mc_join = 0,
+        .min_time = 200, .max_time = 5000, 
+        .query_cb = NULL, .response_cb = scan_response_ack,
+    },
 };
 
 
@@ -707,11 +714,13 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
                     thread_signature, errno, strerror(errno));
     }
 
-    if(port_def->bind_port && scan_socket_bind(sd, port_def->bind_port, thread_signature)){
-        log_debug("%s End listen thread [time: %lu ms]!",
-                    thread_signature, nm_time_ms_diff(thread_start));
-        return;
-    }
+//     if(port_def->bind_port && scan_socket_bind(sd, port_def->bind_port, thread_signature)){
+//         log_debug("%s End listen thread [time: %lu ms]!",
+//                     thread_signature, nm_time_ms_diff(thread_start));
+//         return;
+//     }
+    if(port_def->bind_port)
+        scan_socket_bind(sd, port_def->bind_port, thread_signature);
 
     if(!scan_util_is_running() || scan.quit_now)
         return;

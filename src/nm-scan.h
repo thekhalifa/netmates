@@ -69,7 +69,6 @@ typedef struct {
 } scan_range;
 
 
-
 typedef struct scan_result{
     enum scan_host_state response;
     enum nm_host_type host_type;

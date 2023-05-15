@@ -5,12 +5,7 @@
 #include "nm-host.h"
 
 
-#define UDP_QUERY_DNS "\x71\x80\x01\x00\x00\x01\x00\x00\x00\x00\x00\x01\x08\x61\x6f\x75" \
-"\x72\x67\x61\x74\x65\x03\x6c\x61\x6e\x00\x00\x01\x00\x01\x00\x00" \
-"\x29\x02\x00\x00\x00\x00\x00\x00\x00"
-// switch to a simple "query com PTR"
-
-#define UDP_QUERY_NBS "\x80\xf0\x00\x10\x00\x01\x00\x00\x00\x00\x00\x00\x20\x43\x4b\x41" \
+#define PROTO_NBS_QUERY "\x80\xf0\x00\x10\x00\x01\x00\x00\x00\x00\x00\x00\x20\x43\x4b\x41" \
 "\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41" \
 "\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21" \
 "\x00\x01"
@@ -38,12 +33,6 @@
 
 typedef struct scan_result scan_result;
 
-bool    probe_ssdp_query(int sd, void *lp);
-bool    probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
-
-bool    probe_mdns_query(int sd, void *lp);
-bool    probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
-
 
 typedef struct {
     int length;
@@ -65,19 +54,6 @@ typedef struct proto_def {
     proto_query *queries;
     proto_signature *signatures;
 } proto_def;
-
-
-typedef struct {
-    proto_def def;
-    char *send_ip;
-    char *header_search;
-    char *response_header_notify;
-    char *response_header_ok;
-    char *key_notify_type;
-    char *key_search_type;
-    proto_query *queries;
-    proto_signature *signatures;
-} proto_sdp;
 
 
 
@@ -130,14 +106,22 @@ typedef struct {
     proto_dns_rheader    rrecord;
 } proto_dns_message;
 
-//static proto_sdp proto_sdp_definition;
+extern proto_def proto_ssdp_definition;
 extern proto_def proto_dns_definition;
 extern proto_def proto_mdns_definition;
 
 
-int    probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct in_addr addr);
-int    probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
-int    probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
+//bool    probe_ssdp_query(int sd, void *lp);
+int     probe_string_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
+
+bool    probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
+
+
+int     probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct in_addr addr);
+int     probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
+
+int     probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
+bool    probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
 
 

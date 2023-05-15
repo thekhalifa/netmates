@@ -1,7 +1,7 @@
 #include "nm-protocol.h"
 #include "nm-scan.h"
 
-static proto_query proto_sdp_queries[] = {
+static proto_query proto_ssdp_queries[] = {
     {
         .message = ""
             "M-SEARCH * HTTP/1.1\r\n"
@@ -21,7 +21,7 @@ static proto_query proto_sdp_queries[] = {
     {},
 };
 
-static proto_signature proto_sdp_signatures[] = {
+static proto_signature proto_ssdp_signatures[] = {
     {.signature = "upnp:rootdevice", 
         .service_name = "upnp", .host_type = HOST_TYPE_UNKNOWN},
     {.signature = "urn:dial-multiscreen-org:service:dial", 
@@ -44,26 +44,23 @@ static proto_signature proto_sdp_signatures[] = {
 };
 
 
-static proto_sdp proto_sdp_definition = {
+proto_def proto_ssdp_definition = {
     .send_ip = "239.255.255.250", 
-    .header_search = "M-SEARCH * HTTP/1.1",
-    .response_header_notify = "NOTIFY * HTTP/1.1",
-    .response_header_ok = "HTTP/1.1 200 OK",
-    .key_notify_type = "NT:",
-    .key_search_type = "ST:",
-    .queries = proto_sdp_queries,
-    .signatures = proto_sdp_signatures,
+    .queries = proto_ssdp_queries,
+    .signatures = proto_ssdp_signatures,
 };
 
 
+
 static proto_query proto_mdns_queries[] = {
-    {.message = "_services._dns-sd._udp.local"},
-    {.message = "_smb._tcp.local"},
-    {.message = "_hap._tcp.local"},
-    {.message = "_spotify-connect._tcp.local"},
-    {.message = "_homekit._tcp.local"},
-    {.message = "_matterc._udp.local"},
-    {.message = "_companion-link._tcp.local"},
+    {.message = "_amzn-wplay._tcp.local"},
+//     {.message = "_services._dns-sd._udp.local"},
+//     {.message = "_smb._tcp.local"},
+//     {.message = "_hap._tcp.local"},
+//     {.message = "_spotify-connect._tcp.local"},
+//     {.message = "_homekit._tcp.local"},
+//     {.message = "_matterc._udp.local"},
+//     {.message = "_companion-link._tcp.local"},
     {},
 };
 
@@ -74,6 +71,8 @@ static proto_signature proto_mdns_signatures[] = {
         .service_name = "hap", .host_type = HOST_TYPE_SMART_DEVICE},
     {.signature = "_spotify-connect._tcp", 
         .service_name = "spotify", .host_type = HOST_TYPE_UNKNOWN},
+    {.signature = "_amzn-wplay._tcp", 
+        .service_name = "amazon-wplay", .host_type = HOST_TYPE_SMART_TV},
     {.signature = "_homekit._tcp", 
         .service_name = "homekit", .host_type = HOST_TYPE_UNKNOWN},
     {.signature = "_matterc._udp", 
@@ -135,11 +134,26 @@ bool probe_ssdp_query(int sd, void *lp){
     
     return true;
 }
+*/
 
+int probe_string_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr) {
+    
+    size_t msgsize = strlen(message);
+    msgsize = msgsize > buffsize ? buffsize : msgsize;
+    strncpy(buff, message, msgsize);
+    return msgsize;
+
+}
 
 bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size){
     assert(in_buffer != NULL);
 
+    //static char *header_search = "M-SEARCH * HTTP/1.1";
+    static char *response_header_notify = "NOTIFY * HTTP/1.1";
+    static char *response_header_ok = "HTTP/1.1 200 OK";
+    static char *key_notify_type = "NT:";
+    static char *key_search_type = "ST:";
+    
     char line[NM_GEN_BUFFSIZE], key_token[64], value_token[NM_GEN_BUFFSIZE];
     char *key_type = NULL;
     proto_signature *signature;
@@ -153,12 +167,12 @@ bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
     }
 
     nm_string_copy_line((const char*)in_buffer, in_size, 0, line, sizeof(line));
-    if(!strncmp(line, proto_sdp_definition.response_header_notify, 
-                strlen(proto_sdp_definition.response_header_notify))){
-        key_type = proto_sdp_definition.key_notify_type;
-    }else if(!strncmp(line, proto_sdp_definition.response_header_ok,
-                strlen(proto_sdp_definition.response_header_ok))){
-        key_type = proto_sdp_definition.key_search_type;
+    if(!strncmp(line, response_header_notify, 
+                strlen(response_header_notify))){
+        key_type = key_notify_type;
+    }else if(!strncmp(line, response_header_ok,
+                strlen(response_header_ok))){
+        key_type = key_search_type;
     }
     if(!key_type)
         return NULL;
@@ -180,7 +194,7 @@ bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
             continue;
 
         //key matches, now compare value to known signatures
-        for(signature = proto_sdp_definition.signatures; signature->signature; signature++){
+        for(signature = proto_ssdp_definition.signatures; signature->signature; signature++){
             if(strstr(value_token, signature->signature)){
                 log_trace("probe_ssdp_process: found signature: %s", signature->signature);
                 if(signature->service_name)
@@ -192,7 +206,7 @@ bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
     }
 
     return false;
-}*/
+}
 
 
 static size_t proto_dns_compile_string(const char *name, uint8_t *buffer, size_t bufflen) {
