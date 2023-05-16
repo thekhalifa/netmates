@@ -7,9 +7,6 @@ set(COMMON_FILES    munit.h munit.c
                     ${SRC}/nm-vendordb.h
                     ${SRC}/nm-vendordb.c)
 
-#file(GLOB SOURCE_FILES ${SOURCE_BASE}/nm-host.c ${SOURCE_BASE}/nm-scan.c ${SOURCE_BASE}/nm-proto.c
-#        ${SOURCE_BASE}/nm-common.c ${SOURCE_BASE}/nm-vendordb.c)
-
 
 add_executable(test_common test_common.c ${SRC}/nm-common.c ${COMMON_FILES})
 target_include_directories(test_common PRIVATE ${SRC})

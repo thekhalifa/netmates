@@ -48,7 +48,6 @@ typedef struct {
     char *hw_addr;
     nmlist *list_ip;
     nmlist *list_ip6;
-    nmlist *list_hw_addr;
     nmlist *list_services;
 } nm_host;
 

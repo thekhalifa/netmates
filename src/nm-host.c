@@ -19,20 +19,8 @@ void nm_host_destroy(nm_host *host) {
     free(host->hostname);
     free(host->hw_addr);
 
-//     if(host->ip)
-//         free(host->ip);
-//     if(host->ip6)
-//         free(host->ip6);
-//     if(host->netmask)
-//         free(host->netmask);
-//     if(host->hostname)
-//         free(host->hostname);
-//     if(host->hw_addr)
-//         free(host->hw_addr);
-
     nm_list_free(host->list_ip, true);
     nm_list_free(host->list_ip6, true);
-    nm_list_free(host->list_hw_addr, true);
     nm_list_free(host->list_services, true);
 
     free(host);
@@ -53,8 +41,6 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, c
                                     host->list_ip, NULL);
     if(nm_string_len(ip6))
         host->list_ip6 = nm_host_merge_field(&host->ip6, ip6, host->list_ip6, NULL);
-    if(nm_string_len(hw_addr))
-        host->list_hw_addr = nm_host_merge_field(&host->hw_addr, hw_addr, host->list_hw_addr, NULL);
 
     if(nm_string_len(hostname)){
         if(host->hostname == NULL)
@@ -133,8 +119,6 @@ void nm_host_print(nm_host *host) {
 
     if(host->hw_addr)
         printf("   MAC:   %s\n", host->hw_addr);
-    nm_list_foreach(node, host->list_hw_addr)
-        printf("   MAC:   %s\n", (char *)node->data);
 
     if(host->list_services == NULL)
         return;
@@ -196,8 +180,8 @@ void nm_host_print2(nm_host *host) {
         printf(", IPv6: %s", host->ip6);
     printf("\n");
 
-    char *other_label[] = {"Other IP", "Other IPv6", "Other HW", "Services"};
-    nmlist *other_list[] = {host->list_ip, host->list_ip6, host->list_hw_addr, host->list_services};
+    char *other_label[] = {"Other IP", "Other IPv6", "Services"};
+    nmlist *other_list[] = {host->list_ip, host->list_ip6, host->list_services};
     
     int items = sizeof(other_label) / sizeof(other_label[0]);
     for(int j=0; j<items; j++){
@@ -226,8 +210,6 @@ void nm_host_print3(nm_host *host) {
 
     if(host->hw_addr)
         printf("   HW:   %s\n", host->hw_addr);
-    nm_list_foreach(node, host->list_hw_addr)
-        printf("   HW:   %s\n", (char *)node->data);
     
     if(host->ip)
         printf("   ip4:  %s\n", host->ip);
@@ -313,9 +295,6 @@ void nm_host_merge(nm_host *dst, nm_host *src){
     //ip
     dst->list_ip = nm_host_merge_field(&dst->ip, src->ip,
                                         dst->list_ip, src->list_ip);
-    //hw address
-    dst->list_hw_addr = nm_host_merge_field(&dst->hw_addr, src->hw_addr,
-                                             dst->list_hw_addr, src->list_hw_addr);
     //ip6
     dst->list_ip6 = nm_host_merge_field(&dst->ip6, src->ip6,
                                          dst->list_ip6, src->list_ip6);

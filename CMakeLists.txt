@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(network-mates-lite VERSION 0.2 LANGUAGES C)
+project(netmates VERSION 0.2 LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 
 set(WITH_TESTS YES)
@@ -8,15 +8,15 @@ set(WITH_TESTS YES)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
 
-add_executable( nmlite src/nm-app.c
+add_executable( netmates src/nm-app.c
                 src/nm-common.h src/nm-common.c
                 src/nm-host.h src/nm-host.c
                 src/nm-scan.h src/nm-scan.c
                 src/nm-protocol.h src/nm-protocol.c
                 src/nm-vendordb.h src/nm-vendordb.c
                 src/log.h src/log.c)
-target_include_directories(nmlite PRIVATE src/)
-target_link_libraries(nmlite PkgConfig::glib)
+target_include_directories(netmates PRIVATE src/)
+target_link_libraries(netmates PkgConfig::glib)
 
 
 # Check GTK to build gui
@@ -34,7 +34,7 @@ if (PKG_CONFIG_FOUND)
             MAIN_DEPENDENCY ${NM_GRESOURCE_XML} DEPENDS gui/nm-window.ui gui/nm-style.css)
     add_custom_target(nmgui-resource DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C})
 
-    add_executable( nmgui src/nm-appgui.c
+    add_executable( netmates-gui src/nm-appgui.c
                     src/nm-appwindow.h src/nm-appwindow.c
                     src/nm-common.h src/nm-common.c
                     src/nm-host.h src/nm-host.c
@@ -43,11 +43,11 @@ if (PKG_CONFIG_FOUND)
                     src/nm-vendordb.h src/nm-vendordb.c
                     src/log.h src/log.c
                     ${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C})
-    target_include_directories(nmgui PRIVATE src/)
+    target_include_directories(netmates-gui PRIVATE src/)
     set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C}
             PROPERTIES GENERATED TRUE)
-    add_dependencies(nmgui nmgui-resource)
-    target_link_libraries(nmgui PkgConfig::gtk)
+    add_dependencies(netmates-gui nmgui-resource)
+    target_link_libraries(netmates-gui PkgConfig::gtk)
 endif()
 
 # Tests
