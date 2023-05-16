@@ -1,22 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(network-mates-lite VERSION 0.2 LANGUAGES C)
-
 set(CMAKE_C_STANDARD 11)
- 
 
-#add_executable(nmlite src/main.c
-#		src/log.h src/log.c
-#		src/nm-app.h src/nm-app.c
-#		src/nm-common.h src/nm-common.c
-#		src/nm-vendordb.h src/nm-vendordb.c)
-# add_executable(nmlite src/main.c src/nm-app.c src/nm-common.c src/nm-host.c
-#         src/nm-scan.c src/nm-proto.c src/nm-vendordb.c)
-
-#add_executable( nmlite src/main.c
-                #src/nm-common.h src/nm-common.c
-                #src/nm-host.h src/nm-host.c
-                #src/nm-vendordb.h src/nm-vendordb.c
-                #src/log.h src/log.c)
+set(WITH_TESTS YES)
 
 
 find_package(PkgConfig REQUIRED)
@@ -32,5 +18,42 @@ add_executable( nmlite src/nm-app.c
 target_include_directories(nmlite PRIVATE src/)
 target_link_libraries(nmlite PkgConfig::glib)
 
-enable_testing()
-add_subdirectory(tests)
+
+# Check GTK to build gui
+pkg_check_modules(gtk IMPORTED_TARGET gtk+-3.0)
+if (PKG_CONFIG_FOUND)
+    #pkg_check_modules(gtk REQUIRED IMPORTED_TARGET gtk+-3.0)
+    find_program(GLIB_COMPILE_RESOURCES NAMES glib-compile-resources REQUIRED)
+
+    set(NM_GRESOURCE_XML gui/nm.gresource.xml)
+    set(NM_GRESOURCE_C nm.gresource.c)
+
+    add_custom_command(OUTPUT ${NM_GRESOURCE_C} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMAND ${GLIB_COMPILE_RESOURCES}
+            ARGS --generate --target=${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C} ${NM_GRESOURCE_XML} VERBATIM
+            MAIN_DEPENDENCY ${NM_GRESOURCE_XML} DEPENDS gui/nm-window.ui gui/nm-style.css)
+    add_custom_target(nmgui-resource DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C})
+
+    add_executable( nmgui src/nm-appgui.c
+                    src/nm-appwindow.h src/nm-appwindow.c
+                    src/nm-common.h src/nm-common.c
+                    src/nm-host.h src/nm-host.c
+                    src/nm-scan.h src/nm-scan.c
+                    src/nm-protocol.h src/nm-protocol.c
+                    src/nm-vendordb.h src/nm-vendordb.c
+                    src/log.h src/log.c
+                    ${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C})
+    target_include_directories(nmgui PRIVATE src/)
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C}
+            PROPERTIES GENERATED TRUE)
+    add_dependencies(nmgui nmgui-resource)
+    target_link_libraries(nmgui PkgConfig::gtk)
+endif()
+
+# Tests
+if (WITH_TESTS)
+    
+    enable_testing()
+    add_subdirectory(tests)
+    
+endif()

@@ -1,64 +1,55 @@
-
-
-set(SOURCE_BASE ${CMAKE_SOURCE_DIR}/src/)
+set(SRC ${CMAKE_SOURCE_DIR}/src/)
 set(COMMON_FILES    munit.h munit.c
-                    ${SOURCE_BASE}/log.h
-                    ${SOURCE_BASE}/log.c
-                    ${SOURCE_BASE}/nm-common.h
-                    ${SOURCE_BASE}/nm-common.c
-                    ${SOURCE_BASE}/nm-vendordb.h
-                    ${SOURCE_BASE}/nm-vendordb.c)
+                    ${SRC}/log.h
+                    ${SRC}/log.c
+                    ${SRC}/nm-common.h
+                    ${SRC}/nm-common.c
+                    ${SRC}/nm-vendordb.h
+                    ${SRC}/nm-vendordb.c)
 
 #file(GLOB SOURCE_FILES ${SOURCE_BASE}/nm-host.c ${SOURCE_BASE}/nm-scan.c ${SOURCE_BASE}/nm-proto.c
 #        ${SOURCE_BASE}/nm-common.c ${SOURCE_BASE}/nm-vendordb.c)
 
 
-
-# add_executable(test_host test_host.c ${SOURCE_BASE}/nm-host.c ${SOURCE_BASE}/nm-common.c)
-# target_include_directories(test_host PRIVATE ${SOURCE_BASE})
-# target_link_libraries(test_host PkgConfig::GtkD)
-# add_test(NAME host COMMAND test_host --verbose)
-
-# add_executable(test_scan test_scan.c ${SOURCE_FILES})
-# target_include_directories(test_scan PRIVATE ${SOURCE_BASE})
-# target_link_libraries(test_scan PkgConfig::GtkD)
-# add_test(NAME scan COMMAND test_scan --verbose)
-
-#file(GLOB SOURCE_FILES ${SOURCE_BASE}/nm-common.c)
-
-#add_executable(test_common test_common.c ${SOURCE_BASE}/nm-common.c)
-#target_include_directories(test_common PRIVATE ${SOURCE_BASE})
-#target_link_libraries(test_common PRIVATE cunit)
-#add_test(NAME common COMMAND test_common)
-
-add_executable(test_common test_common.c ${SOURCE_BASE}/nm-common.c ${COMMON_FILES})
-target_include_directories(test_common PRIVATE ${SOURCE_BASE})
+add_executable(test_common test_common.c ${SRC}/nm-common.c ${COMMON_FILES})
+target_include_directories(test_common PRIVATE ${SRC})
 target_link_libraries(test_common PkgConfig::glib)
 add_test(NAME common COMMAND test_common)
 
-add_executable(test_host test_host.c ${SOURCE_BASE}/nm-host.c ${SOURCE_BASE}/nm-host.h ${COMMON_FILES})
-target_include_directories(test_host PRIVATE ${SOURCE_BASE})
+add_executable(test_host test_host.c ${SRC}/nm-host.c ${SRC}/nm-host.h ${COMMON_FILES})
+target_include_directories(test_host PRIVATE ${SRC})
 target_link_libraries(test_host PkgConfig::glib)
 add_test(NAME host COMMAND test_host)
 
-add_executable(test_vendordb test_vendordb.c ${SOURCE_BASE}/nm-vendordb.c ${COMMON_FILES})
-target_include_directories(test_vendordb PRIVATE ${SOURCE_BASE})
+add_executable(test_vendordb test_vendordb.c ${SRC}/nm-vendordb.c ${COMMON_FILES})
+target_include_directories(test_vendordb PRIVATE ${SRC})
 target_link_libraries(test_vendordb PkgConfig::glib)
 add_test(NAME vendordb COMMAND test_vendordb)
 
-add_executable(test_protocol test_protocol.c ${SOURCE_BASE}/nm-protocol.c ${COMMON_FILES})
-target_include_directories(test_protocol PRIVATE ${SOURCE_BASE})
+add_executable(test_protocol test_protocol.c ${SRC}/nm-protocol.c ${COMMON_FILES})
+target_include_directories(test_protocol PRIVATE ${SRC})
 target_link_libraries(test_protocol PkgConfig::glib)
 add_test(NAME protocol COMMAND test_protocol)
 
-# Experiment with cunit
-#add_executable(test_basic test_basic.c)
-#target_link_libraries(test_basic PRIVATE cunit)
-#add_test(NAME basic COMMAND test_basic)
 
-# munit
-add_executable(test_basicm test_basicm.c munit.c)
-target_include_directories(test_basicm PRIVATE ${SOURCE_BASE})
-#target_link_libraries(test_basic PRIVATE cunit)
-add_test(NAME basicm COMMAND test_basicm)
+
+# Check GTK to test gui
+pkg_check_modules(gtk IMPORTED_TARGET gtk+-3.0)
+if (PKG_CONFIG_FOUND)
+
+    add_executable(test_window test_window.c ${SRC}/nm-appwindow.c ${SRC}/nm-appwindow.h
+                    ${SRC}/nm-host.c ${SRC}/nm-host.h
+                    ${SRC}/nm-protocol.c ${SRC}/nm-protocol.h
+                    ${SRC}/nm-scan.c ${SRC}/nm-scan.h
+                    ${COMMON_FILES} ${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C})
+    target_include_directories(test_window PRIVATE ${SRC})
+    target_link_libraries(test_window PkgConfig::gtk)
+
+    set_source_files_properties(${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C}
+            PROPERTIES GENERATED TRUE)
+    add_dependencies(test_window nmgui-resource)
+    
+    add_test(NAME window COMMAND test_window --verbose)
+
+endif()
 

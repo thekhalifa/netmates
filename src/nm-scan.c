@@ -1187,6 +1187,17 @@ bool scan_list_localhost() {
 
 }
 
+void scan_clear(){
+    if(scan.hosts){
+        nm_list_foreach(host, scan.hosts)
+            nm_host_destroy(host->data);
+        nm_list_free(scan.hosts, false);
+        scan.hosts = NULL;
+    }
+    if(scan.localhost)
+        scan.localhost = NULL;
+}
+
 
 void scan_start() {
     log_trace("scan_start: called");
@@ -1197,7 +1208,10 @@ void scan_start() {
         return;
     }
     scan.running = 1;
+    scan.quit_now = 0;
     unsigned long starttime = nm_time_ms();
+
+    scan_clear();
 
     if(!scan_list_localhost())
         log_warn("Could not resolve localhost address details");
@@ -1210,7 +1224,7 @@ void scan_start() {
         log_info("ARP entries found: %d", arps_found);
     
     }
-    if(scan.opt_known_first || scan.opt_known_only){
+    if(scan.opt_print && (scan.opt_known_first || scan.opt_known_only)){
         puts("- Known Lists: -->");
         scan_print_mates(scan.hosts, true);
         if(scan.opt_known_only)
@@ -1221,12 +1235,14 @@ void scan_start() {
         printf("- Starting scan...\n");
         scan_discover_subnet(scan.opt_connect_threads > 0, scan.opt_listen_threads > 0);
         puts("- Results: -->");
-        scan_print_mates(scan.hosts, false);
+        if(scan.opt_print)
+            scan_print_mates(scan.hosts, false);
     }
     
     scan.running = 0;
-    printf("- Scan done in %.1fs with %i hosts found\n", 
-           nm_time_ms_diff(starttime) / 1000.0f, nm_list_len(scan.hosts));
+    if(scan.opt_print)
+        printf("- Scan done in %.1fs with %i hosts found\n", 
+                nm_time_ms_diff(starttime) / 1000.0f, nm_list_len(scan.hosts));
 
     log_trace("scan_start: end");
 
