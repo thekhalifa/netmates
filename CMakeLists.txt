@@ -57,3 +57,12 @@ if (WITH_TESTS)
     add_subdirectory(tests)
     
 endif()
+
+# Documentation
+add_custom_command(OUTPUT netmates.html 
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc
+                    COMMAND man2html 
+                    ARGS ${CMAKE_CURRENT_SOURCE_DIR}/doc/netmates.1 > ${CMAKE_CURRENT_SOURCE_DIR}/doc/netmates.html
+                    VERBATIM)
+add_custom_target(nmdoc DEPENDS netmates.html)
+

@@ -49,6 +49,13 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, c
             log_warn("nm_host_set_attributes: found conflicting hostnames: %s, %s", host->hostname, hostname);
     }
 
+    if(nm_string_len(hw_addr)){
+        if(host->hw_addr == NULL)
+            host->hw_addr = strdup(hw_addr);
+        else if(strcmp(host->hw_addr, hw_addr))
+            log_warn("nm_host_set_attributes: found conflicting hostnames: %s, %s", host->hw_addr, hw_addr);
+    }
+
     if(nm_string_len(netmask)){
         if(host->netmask == NULL)
             host->netmask = strdup(netmask);
@@ -156,7 +163,7 @@ void nm_host_print_wide(nm_host *host) {
     if(host->list_services) {
         printf("             [");
         nm_list_foreach(node, host->list_services)
-            printf("%s ", (char *)node->data);
+            printf("%s%s", (char *)node->data, node->next ? ", " : "");
         printf("]\n");
     }
 }
@@ -244,6 +251,16 @@ const char *nm_host_label(nm_host *host) {
 }
 
 
+const char *nm_host_type(nm_host *host) {
+    assert(host != NULL);
+    assert(host->type >= HOST_TYPE_UNKNOWN);
+    assert(host->type < HOST_TYPE_LENGTH);
+
+    return nm_host_type_labels[host->type];
+
+}
+
+
 static nmlist *nm_host_merge_field(char **dest_field, char *src_field, 
                                    nmlist *dest_list_field, nmlist *src_list_field) {
 
@@ -290,6 +307,13 @@ void nm_host_merge(nm_host *dst, nm_host *src){
     }else if(nm_string_len(dst->hostname) && nm_string_len(src->hostname) && 
                 strcmp(dst->hostname, src->hostname)){
         log_warn("nm_host_merge: found conflicting hostnames: %s, %s", dst->hostname, src->hostname);
+    }
+
+    if(dst->hw_addr == NULL && nm_string_len(src->hw_addr) > 0){
+        dst->hw_addr = strdup(src->hw_addr);
+    }else if(nm_string_len(dst->hw_addr) && nm_string_len(src->hw_addr) && 
+                strcmp(dst->hw_addr, src->hw_addr)){
+        log_warn("nm_host_merge: found conflicting hw_addr: %s, %s", dst->hw_addr, src->hw_addr);
     }
 
     //ip

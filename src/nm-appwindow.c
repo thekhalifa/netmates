@@ -17,6 +17,7 @@ nm_window window = {
 enum{
     PROP_HOST_NAME = 1,
     PROP_HOST_TYPE,
+    PROP_HOST_TYPE_LABEL,
     PROP_HOST_IPV4,
     PROP_HOST_IPV6,
     PROP_HOST_HW,
@@ -35,8 +36,9 @@ typedef struct{
 G_DEFINE_TYPE(HostItem, host_item, G_TYPE_OBJECT)
 
 static void host_item_init(HostItem *obj){
-    obj->host_type = HOST_TYPE_UNKNOWN;
     obj->host_name = NULL;
+    obj->host_type = HOST_TYPE_UNKNOWN;
+    obj->host_type_label = NULL;
     obj->host_ipv4 = NULL;
     obj->host_ipv6 = NULL;
     obj->host_hw_addr = NULL;
@@ -53,6 +55,9 @@ static void host_item_get_property(GObject *obj, guint prop_id, GValue *value, G
             break;
         case PROP_HOST_TYPE:
             g_value_set_int(value, item->host_type);
+            break;
+        case PROP_HOST_TYPE_LABEL:
+            g_value_set_string(value, item->host_type_label);
             break;
         case PROP_HOST_IPV4:
             g_value_set_string(value, item->host_ipv4);
@@ -87,6 +92,10 @@ static void host_item_set_property(GObject *obj, guint prop_id, const GValue *va
             break;
         case PROP_HOST_TYPE:
             item->host_type = g_value_get_int(value);
+            break;
+        case PROP_HOST_TYPE_LABEL:
+            g_free(item->host_type_label);
+            item->host_type_label = g_value_dup_string(value);
             break;
         case PROP_HOST_IPV4:
             g_free(item->host_ipv4);
@@ -124,6 +133,7 @@ static void host_item_set_property(GObject *obj, guint prop_id, const GValue *va
 static void host_item_finalize(GObject *obj){
     HostItem *item = (HostItem *)obj;
     g_free(item->host_name);
+    g_free(item->host_type_label);
     g_free(item->host_ipv4);
     g_free(item->host_ipv6);
     g_free(item->host_hw_addr);
@@ -145,6 +155,8 @@ static void host_item_class_init(HostItemClass *class){
                                                            NULL, G_PARAM_READWRITE);
     host_item_props[PROP_HOST_TYPE] = g_param_spec_int("host_type", "host_type", "host_type",
                                     HOST_TYPE_UNKNOWN, HOST_TYPE_LENGTH, HOST_TYPE_UNKNOWN, G_PARAM_READWRITE);
+    host_item_props[PROP_HOST_TYPE_LABEL] = g_param_spec_string("host_type_label", "host_type_label", "host_type_label",
+                                                         NULL, G_PARAM_READWRITE);
     host_item_props[PROP_HOST_IPV4] = g_param_spec_string("host_ipv4", "host_ipv4", "host_ipv4",
                                                          NULL, G_PARAM_READWRITE);
     host_item_props[PROP_HOST_IPV6] = g_param_spec_string("host_ipv6", "host_ipv6", "host_ipv6",
@@ -178,7 +190,7 @@ copy_string_list_as_array(GList *src_list){
     return dst_array;
 }
 
-
+/*
 static void host_item_update_from_host(HostItem *item, nm_host *host){
     g_assert(item != NULL);
     g_assert(host != NULL);
@@ -230,7 +242,7 @@ static void host_item_update_from_host(HostItem *item, nm_host *host){
     g_object_set_property(G_OBJECT(item), "host_services", &services);
     g_array_free(services_array, TRUE);
 
-}
+}*/
 
 
 static char *
@@ -244,16 +256,7 @@ create_label_text_for_host(HostItem *host_item){
 
     
     //Title
-    if(host_item->host_name)
-        position += sprintf(buffer, title_format, host_item->host_name);
-    else if(host_item->host_ipv4)
-        position += sprintf(buffer, title_format, host_item->host_ipv4);
-    else if(host_item->host_ipv6)
-        position += sprintf(buffer, title_format, host_item->host_ipv6);
-    else if(host_item->host_hw_addr)
-        position += sprintf(buffer, title_format, host_item->host_hw_addr);
-    else
-        position += sprintf(buffer, title_format, "?");
+    position += sprintf(buffer, title_format, host_item->host_name);
 
     //Details
     if(host_item->host_ipv4)
@@ -378,6 +381,7 @@ static GtkWidget *list_create_row(gpointer item, gpointer user_data){
     GtkWidget *row_image = gtk_image_new_from_icon_name(icon_name, GTK_ICON_SIZE_LARGE_TOOLBAR);
     GtkWidget *button = gtk_button_new();
     gtk_button_set_image(GTK_BUTTON(button), row_image);
+    gtk_widget_set_tooltip_text(button, entry_item->host_type_label);
     //gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
     gtk_widget_set_size_request(button, 40, 40);
     gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
@@ -419,15 +423,15 @@ static GtkWidget *list_create_row(gpointer item, gpointer user_data){
 //    GtkWidget *flow_child2 = create_flow_box_child(NULL, "network-wired-symbolic", "Help Text for Network");
 //    gtk_container_add(GTK_CONTAINER(flow_box), flow_child2);
 
-    GtkWidget* mid_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    GtkWidget* mid_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_start(GTK_BOX(mid_box), host_label, TRUE, TRUE, 0);
     gtk_box_pack_end(GTK_BOX(mid_box), flow_box, FALSE, TRUE, 0);
 
 
-    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 5);
     gtk_box_pack_start(GTK_BOX(box), mid_box, TRUE, TRUE, 5);
-    gtk_widget_set_size_request(box, -1, 80);
+    //gtk_widget_set_size_request(box, -1, 80);
     gtk_widget_show_all(box);
     return box;
 }
@@ -500,8 +504,9 @@ void list_add_item(nm_host *host){
     GArray *services_array = copy_string_list_as_array(host->list_services);//nm_copy_string_list_as_array(host->services);
 
     HostItem *obj = g_object_new(host_item_get_type(),
-                                 "host_name", host->hostname,
+                                 "host_name", nm_host_label(host),
                                  "host_type", host->type,
+                                 "host_type_label", nm_host_type(host),
                                  "host_ipv4", host->ip,
                                  "host_ipv6", host->ip6,
                                  "host_hw_addr", host->hw_addr,
@@ -518,9 +523,11 @@ void list_add_item(nm_host *host){
 gboolean refresh_results(gpointer data) {
     puts("Refreshing results");
     
+    g_list_store_remove_all(window.list_store);
     scan_state *state = scan_getstate();
-    nm_list_foreach(h, state->hosts)
+    nm_list_foreach(h, state->hosts) {
         list_add_item(h->data);
+    }
 
     gtk_widget_hide(window.spinner);
     gtk_widget_show(window.refresh_button);
@@ -539,12 +546,13 @@ gpointer refresh_thread(gpointer data) {
     return NULL;
 }
 
+
+
 void refresh_hosts() {
     
     gtk_spinner_start(GTK_SPINNER(window.spinner));
     gtk_widget_show(window.spinner);
     gtk_widget_hide(window.refresh_button);
-    g_list_store_remove_all(window.list_store);
 
     GThread *thread;
     GError *error;
@@ -554,6 +562,34 @@ void refresh_hosts() {
         return;
     }
     g_thread_unref(thread);
+}
+
+
+void refresh_hosts_known() {
+    
+    gtk_spinner_start(GTK_SPINNER(window.spinner));
+    gtk_widget_show(window.spinner);
+    gtk_widget_hide(window.refresh_button);
+
+    scan_state *state = scan_getstate();
+    bool prev_known = state->opt_known_only;
+    state->opt_known_only = true;
+
+    scan_start();
+    scan_stop();
+    
+    g_list_store_remove_all(window.list_store);
+    nm_list_foreach(h, state->hosts) {
+        list_add_item(h->data);
+    }
+
+    gtk_widget_hide(window.spinner);
+    gtk_widget_show(window.refresh_button);
+    state->opt_known_only = prev_known;
+    
+    if(!state->opt_known_only)
+        refresh_hosts();
+    
 }
 
 
@@ -590,7 +626,7 @@ void on_app_activate(GtkApplication *gtkapp, gpointer user_data){
 
     window.listbox = GTK_LIST_BOX(gtk_builder_get_object(window.builder, "main_listbox"));
     gtk_list_box_set_activate_on_single_click(window.listbox, FALSE);
-    gtk_list_box_set_selection_mode(window.listbox, GTK_SELECTION_SINGLE);
+    gtk_list_box_set_selection_mode(window.listbox, GTK_SELECTION_NONE);
     //gtk_widget_set_size_request(GTK_WIDGET(window.listbox), 390, 400);
 
     //init list store and stuff
@@ -609,6 +645,8 @@ void on_app_activate(GtkApplication *gtkapp, gpointer user_data){
     gtk_application_add_window(window.gtk_app, GTK_WINDOW(window.window));
     gtk_widget_show_all (GTK_WIDGET(window.window_widget));
     gtk_widget_hide(window.spinner);
+    
+    refresh_hosts_known();
 }
 
 int init_application(int argc, char **argv){
@@ -618,17 +656,16 @@ int init_application(int argc, char **argv){
     
     scan_state *state = scan_getstate();
     state->opt_print = false;
-    //state->opt_known_first = nm_app.arg_known_first;
-    state->opt_known_only = true;
+    state->opt_known_only = false;
     state->opt_skip_resolve = false;
-//     state->opt_scan_only = nm_app.arg_scan_only;
-//     state->opt_scan_all = nm_app.arg_scan_all;
-//     state->opt_scan_timeout_ms = nm_app.arg_scan_timeout;
-//     state->opt_max_hosts = nm_app.arg_max_hosts;
-//     state->opt_subnet_offset = nm_app.arg_subnet_offset;
-//     state->opt_connect_threads = nm_app.arg_conn_threads;
-//     state->opt_connect_timeout_ms = nm_app.arg_conn_timeout;
-//     state->opt_listen_threads = nm_app.arg_list_threads;
+    state->opt_scan_only = false;
+    state->opt_scan_all = 0;
+    state->opt_scan_timeout_ms = 15000;
+    state->opt_max_hosts = -1;
+    state->opt_subnet_offset = 0;
+    state->opt_connect_threads = 255;
+    state->opt_connect_timeout_ms = 300;
+    state->opt_listen_threads = 10;
 
     scan_init();
 

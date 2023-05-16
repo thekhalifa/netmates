@@ -37,7 +37,8 @@ static char *nm_host_type_labels[] = {
         NULL
 };
 
-
+//TODO: Localhost 2nd hwaddr?
+//TODO: separate hw vendor?
 typedef struct {
     int type;
     in_addr_t ip_addr;
@@ -62,7 +63,7 @@ void        nm_host_add_services(nm_host *host, nmlist *services);
 void        nm_host_print(nm_host *host);
 void        nm_host_print_wide(nm_host *host);
 const char *nm_host_label(nm_host *host);
-
+const char *nm_host_type(nm_host *host);
 /* entry merge functions */
 
 nmlist     *nm_host_merge_in_list(nmlist *list, nm_host *newhost);

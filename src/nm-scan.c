@@ -69,7 +69,7 @@ static const scan_port scan_port_list[] = {
         .service = "mysql", .required = 0, .host_type = HOST_TYPE_PRINTER},
     /* -- */
     {.method = SCAN_TCP_CONNECT, .port = 6668,
-        .service = "tuya", .required = 1, .host_type = HOST_TYPE_PRINTER},
+        .service = "tuya", .required = 1, .host_type = HOST_TYPE_SMART_DEVICE},
     /* -- 
     {.method = SCAN_TCP_CONNECT, .port = 70,
         .service = "gopher", .required = 0, .host_type = HOST_TYPE_PC},
@@ -1173,7 +1173,9 @@ bool scan_list_localhost() {
             inet_ntop(AF_INET6, &((struct sockaddr_in6 *) ifa->ifa_addr)->sin6_addr, ip6_buffer, sizeof(ip6_buffer));
             nm_host_set_attributes(scan.localhost, NULL, ip6_buffer, NULL, NULL, NULL);
         } else if (family == AF_PACKET) {
+            log_trace("scan_list_localhost: packet going into buffer");
             nm_format_hw_address(hwaddr_buffer, sizeof(hwaddr_buffer), (struct sockaddr_ll *) ifa->ifa_addr);
+            log_trace("scan_list_localhost: formatted %s into buffer", hwaddr_buffer);
             if(!scan.opt_skip_resolve)
                 nm_update_hw_vendor(hwaddr_buffer, sizeof(hwaddr_buffer));
             nm_host_set_attributes(scan.localhost, NULL, NULL, NULL, hwaddr_buffer, NULL);

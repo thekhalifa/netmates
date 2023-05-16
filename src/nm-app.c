@@ -1,7 +1,7 @@
 #include <signal.h>
+#include "nm-common.h"
 #include "nm-scan.h"
 
-#define NM_APP_NAME "nmlite"
 
 /* Application argument defaults */
 struct {
@@ -32,6 +32,11 @@ struct {
     .arg_subnet_offset = -1,
 };
 
+void print_version() {
+    printf(""NM_APP_NAME" version "NM_APP_VERSION"\n");
+}
+
+
 void print_usage() {
     printf("Usage: \n"
     "\n"
@@ -53,6 +58,7 @@ void print_usage() {
     "\n"
     "    -g, --debug                 print debug messages\n"
     "    -G, --trace                 print trace messages\n"
+    "    -v, --version               print version number and exit\n"
     "    -h, --help                  help message (this one)\n"
     "\n");
 }
@@ -75,6 +81,9 @@ void process_args(int argc, char *argv[]) {
 
         if(!strcmp(option, "-h") || !strcmp(option, "--help")){
             print_usage();
+            exit(0);
+        }else if(!strcmp(option, "-v") || !strcmp(option, "--version")){
+            print_version();
             exit(0);
         }else if(!strcmp(option, "-g") || !strcmp(option, "--debug")){
             log_set_level(LOG_DEBUG);

@@ -1,0 +1,73 @@
+.TH NETMATES 1 "netmates v0.1" "2023-05"
+.SH NAME
+netmates \- a network discovery utility
+.SH SYNOPSIS
+
+.B netmates
+[
+.I options
+]
+
+.B netmates-gui
+.SH DESCRIPTION
+.B netmates
+is a command line network discovery utility
+.PP
+.B netmates-gui
+is a simpler gtk-based application using the same scanning techniques, but limited in options that can be passed to it.
+.SH OPTIONS
+.SS Scan flags
+.TP
+.B \-k, \-\-known-only
+print known hosts only, no scan
+.TP
+.B \-K, \-\-known-first
+print known hosts first then scan
+.TP
+.B \-s, \-\-scan-only
+print scan results only, no known hosts
+.TP
+.B \-S, \-\-scan-all
+scan using all methods even if host is live
+.TP
+.B \-n, \-\-skip-resolve
+skip resolving hosts and show numeric values
+.SS Scan & Probe Options
+.TP
+.B \-t, \-\-scan-timeout <num>
+scan timeout in milliseconds
+.TP
+.B \-T, \-\-connect-timeout <num>
+connect scan timeout in milliseconds
+.TP
+.B \-c, \-\-connect-threads <num>
+number of connect threads. Set to 0 to skip connecting
+.TP
+.B \-l, \-\-listen-threads
+number of listen threads. Set to 0 to skip listening
+.TP
+.B \-m, \-\-max-hosts <num>
+max number of host ipv4 to scan within the subnet
+.TP
+.B \-k, \-\-subnet-offset <num>
+offset of the first host to scan in the ipv4 subnet
+.SS Basic Options
+.TP
+.B \-g, \-\-debug
+print debug messages
+.TP
+.B \-G, \-\-trace
+print trace messages
+.TP
+.B \-v, \-\-version
+Output version information and exit.
+.TP
+.B \-h, \-\-help
+Prints the command line options.
+.SH "AUTHOR"
+.PP
+Written by Ahmad Khalifa.
+.SH "COPYRIGHT"
+.PP
+2023
+

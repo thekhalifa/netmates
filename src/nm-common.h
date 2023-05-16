@@ -15,7 +15,8 @@
 #include "log.h"
 #include "nm-vendordb.h"
 
-#define NM_APP_CLI_NAME "nmlite"
+#define NM_APP_NAME "netmates"
+#define NM_APP_VERSION  "0.1"
 
 #define NM_GEN_BUFFSIZE 512
 #define NM_LARGE_BUFFSIZE BUFSIZ

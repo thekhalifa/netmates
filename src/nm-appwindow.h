@@ -19,8 +19,8 @@
 #define ICON_TYPE_ROUTER "network-wireless"
 #define ICON_TYPE_PRINTER "printer"
 #define ICON_TYPE_LOCALHOST "mark-location"
-#define ICON_TYPE_SMART_TV "video-display"
-#define ICON_TYPE_SMART_DEVICE "scanner"
+#define ICON_TYPE_SMART_TV "tv"
+#define ICON_TYPE_SMART_DEVICE "cpu"
 #define ICON_TYPE_OTHER "help-browser"
 
 
@@ -38,8 +38,9 @@ typedef struct {
 
 typedef struct{
     GObject parent;
-    gint    host_type;
     gchar  *host_name;
+    gint    host_type;
+    gchar  *host_type_label;
     gchar  *host_ipv4;
     gchar  *host_ipv6;
     gchar  *host_hw_addr;
@@ -47,19 +48,19 @@ typedef struct{
     GArray *host_other_ip6;
     GArray *host_services;
 } HostItem;
-
+/*
 
 static char *
 create_label_text_for_host(HostItem *host_item);
 
 static char *
-create_label_tooltip_text_for_host(HostItem *host_item);
-
+create_label_tooltip_text_for_host(HostItem *host_item);*/
+/*
 static GtkWidget *
-create_flow_box_child(const char *label, const char *image_name, const char *tooltip_text);
+create_flow_box_child(const char *label, const char *image_name, const char *tooltip_text);*/
 
 void list_add_item(nm_host *entry);
-void list_update_item(nm_host *entry);
+// void list_update_item(nm_host *entry);
 
 void on_scan_event(int event, void *arg);
 void on_more_info_clicked(GtkWidget *widget, gpointer user_data);
