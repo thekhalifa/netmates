@@ -20,6 +20,8 @@ enum{
     PROP_HOST_IPV4,
     PROP_HOST_IPV6,
     PROP_HOST_HW,
+    PROP_HOST_OTHER_IPV4,
+    PROP_HOST_OTHER_IPV6,
     PROP_HOST_SERVICES,
     LAST_PROPERTY
 };
@@ -33,11 +35,13 @@ typedef struct{
 G_DEFINE_TYPE(HostItem, host_item, G_TYPE_OBJECT)
 
 static void host_item_init(HostItem *obj){
+    obj->host_type = HOST_TYPE_UNKNOWN;
     obj->host_name = NULL;
     obj->host_ipv4 = NULL;
     obj->host_ipv6 = NULL;
-    obj->host_type = HOST_TYPE_UNKNOWN;
     obj->host_hw_addr = NULL;
+    obj->host_other_ip4 = NULL;
+    obj->host_other_ip6 = NULL;
     obj->host_services = NULL;
 }
 
@@ -58,6 +62,12 @@ static void host_item_get_property(GObject *obj, guint prop_id, GValue *value, G
             break;
         case PROP_HOST_HW:
             g_value_set_string(value, item->host_hw_addr);
+            break;
+        case PROP_HOST_OTHER_IPV4:
+            g_value_set_boxed(value, item->host_other_ip4);
+            break;
+        case PROP_HOST_OTHER_IPV6:
+            g_value_set_boxed(value, item->host_other_ip6);
             break;
         case PROP_HOST_SERVICES:
             g_value_set_boxed(value, item->host_services);
@@ -90,9 +100,18 @@ static void host_item_set_property(GObject *obj, guint prop_id, const GValue *va
             g_free(item->host_hw_addr);
             item->host_hw_addr = g_value_dup_string(value);
             break;
+        case PROP_HOST_OTHER_IPV4:
+            if(item->host_other_ip4)
+                g_array_free(item->host_other_ip4, TRUE);
+            item->host_other_ip4 = g_value_get_boxed(value);
+            break;
+        case PROP_HOST_OTHER_IPV6:
+            if(item->host_other_ip6)
+                g_array_free(item->host_other_ip6, TRUE);
+            item->host_other_ip6 = g_value_get_boxed(value);
+            break;
         case PROP_HOST_SERVICES:
             if(item->host_services)
-                //g_array_unref(item->host_services);
                 g_array_free(item->host_services, TRUE);
             item->host_services = g_value_get_boxed(value);
             break;
@@ -108,6 +127,8 @@ static void host_item_finalize(GObject *obj){
     g_free(item->host_ipv4);
     g_free(item->host_ipv6);
     g_free(item->host_hw_addr);
+    g_array_free(item->host_other_ip4, TRUE);
+    g_array_free(item->host_other_ip6, TRUE);
     g_array_free(item->host_services, TRUE);
     G_OBJECT_CLASS(host_item_parent_class)->finalize(obj);
 }
@@ -130,6 +151,10 @@ static void host_item_class_init(HostItemClass *class){
                                                           NULL, G_PARAM_READWRITE);
     host_item_props[PROP_HOST_HW] = g_param_spec_string("host_hw_addr", "host_hw_addr", "host_hw_addr",
                                                            NULL, G_PARAM_READWRITE);
+    host_item_props[PROP_HOST_OTHER_IPV4] = g_param_spec_boxed("host_other_ip4", "host_other_ip4", "host_other_ip4",
+                                                             G_TYPE_ARRAY, G_PARAM_READWRITE);
+    host_item_props[PROP_HOST_OTHER_IPV6] = g_param_spec_boxed("host_other_ip6", "host_other_ip6", "host_other_ip6",
+                                                             G_TYPE_ARRAY, G_PARAM_READWRITE);
     host_item_props[PROP_HOST_SERVICES] = g_param_spec_boxed("host_services", "host_services", "host_services",
                                                              G_TYPE_ARRAY, G_PARAM_READWRITE);
 
@@ -183,6 +208,21 @@ static void host_item_update_from_host(HostItem *item, nm_host *host){
     g_value_set_string(&hw_addr, host->hw_addr);
     g_object_set_property(G_OBJECT(item), "host_hw_addr", &hw_addr);
 
+    GValue other_ip4 = G_VALUE_INIT;
+    g_value_init(&other_ip4, G_TYPE_ARRAY);
+    GArray *ip4_array = copy_string_list_as_array(host->list_ip);
+    g_value_set_boxed(&other_ip4, ip4_array);
+    g_object_set_property(G_OBJECT(item), "host_other_ip4", &other_ip4);
+    g_array_free(ip4_array, TRUE);
+
+    GValue other_ip6 = G_VALUE_INIT;
+    g_value_init(&other_ip6, G_TYPE_ARRAY);
+    GArray *ip6_array = copy_string_list_as_array(host->list_services);
+    g_value_set_boxed(&other_ip6, ip6_array);
+    g_object_set_property(G_OBJECT(item), "host_other_ip6", &other_ip6);
+    g_array_free(ip6_array, TRUE);
+
+    
     GValue services = G_VALUE_INIT;
     g_value_init(&services, G_TYPE_ARRAY);
     GArray *services_array = copy_string_list_as_array(host->list_services);
@@ -214,11 +254,23 @@ create_label_text_for_host(HostItem *host_item){
         position += sprintf(buffer, title_format, host_item->host_hw_addr);
     else
         position += sprintf(buffer, title_format, "?");
-    
+
+    //Details
     if(host_item->host_ipv4)
         position += sprintf(buffer + position, ipv4_format, host_item->host_ipv4);
+    if(host_item->host_other_ip4 && host_item->host_other_ip4->len > 0){
+        for (int i = 0; i < host_item->host_other_ip4->len; i++){
+            position += sprintf(buffer + position, ipv4_format, g_array_index(host_item->host_other_ip4, char *, i));
+        }
+    }
+    
     if(host_item->host_ipv6)
         position += sprintf(buffer + position, ipv6_format, host_item->host_ipv6);
+    if(host_item->host_other_ip6 && host_item->host_other_ip6->len > 0){
+        for (int i = 0; i < host_item->host_other_ip6->len; i++){
+            position += sprintf(buffer + position, ipv6_format, g_array_index(host_item->host_other_ip6, char *, i));
+        }
+    }
     if(host_item->host_hw_addr)
         sprintf(buffer + position, hw_format, host_item->host_hw_addr);
 
@@ -244,8 +296,20 @@ create_label_tooltip_text_for_host(HostItem *host_item){
 
     if(host_item->host_ipv4)
         pointer += sprintf(pointer, ipv4_format, host_item->host_ipv4);
+    if(host_item->host_other_ip4 && host_item->host_other_ip4->len > 0){
+        for (int i = 0; i < host_item->host_other_ip4->len; i++){
+            pointer += sprintf(pointer, ipv4_format, g_array_index(host_item->host_other_ip4, char *, i));
+        }
+    }
+
+    
     if(host_item->host_ipv6 && strlen(host_item->host_ipv6) > 0)
         pointer += sprintf(pointer, ipv6_format, host_item->host_ipv6);
+    if(host_item->host_other_ip6 && host_item->host_other_ip6->len > 0){
+        for (int i = 0; i < host_item->host_other_ip6->len; i++){
+            pointer += sprintf(pointer, ipv6_format, g_array_index(host_item->host_other_ip6, char *, i));
+        }
+    }
     if(host_item->host_hw_addr && strlen(host_item->host_hw_addr) > 0)
         pointer += sprintf(pointer, hw_format, host_item->host_hw_addr);
 
@@ -314,11 +378,11 @@ static GtkWidget *list_create_row(gpointer item, gpointer user_data){
     GtkWidget *row_image = gtk_image_new_from_icon_name(icon_name, GTK_ICON_SIZE_LARGE_TOOLBAR);
     GtkWidget *button = gtk_button_new();
     gtk_button_set_image(GTK_BUTTON(button), row_image);
-    gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
+    //gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
     gtk_widget_set_size_request(button, 40, 40);
     gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
     gtk_widget_set_halign(button, GTK_ALIGN_START);
-    g_signal_connect(button, "clicked", G_CALLBACK(on_more_info_clicked), entry_item);
+    //g_signal_connect(button, "clicked", G_CALLBACK(on_more_info_clicked), entry_item);
 
     //main label
     char *host_text = create_label_text_for_host(entry_item);
@@ -376,12 +440,23 @@ static gint list_compare_items_func(gconstpointer a, gconstpointer b, gpointer u
     g_object_get(entry_a, "host_type", &a_type, NULL);
     g_object_get(entry_b, "host_type", &b_type, NULL);
 
-    if(a_type == HOST_TYPE_LOCALHOST || b_type == HOST_TYPE_LOCALHOST ||
-            a_type == HOST_TYPE_ROUTER || b_type == HOST_TYPE_ROUTER){
-        return (gint)(a_type - b_type);
-    }
+    if(a_type == HOST_TYPE_LOCALHOST)
+        return -1;
+    else if(b_type == HOST_TYPE_LOCALHOST)
+        return 1;
+    else if(a_type == HOST_TYPE_ROUTER)
+        return -1;
+    else if(b_type == HOST_TYPE_ROUTER)
+        return 1;
 
-    return -1;
+    return 1;
+
+//     if(a_type == HOST_TYPE_LOCALHOST || b_type == HOST_TYPE_LOCALHOST ||
+//             a_type == HOST_TYPE_ROUTER || b_type == HOST_TYPE_ROUTER){
+//         return (gint)(a_type - b_type);
+//     }
+// 
+//     return 1;
 //     char *a_name, *b_name;
 //     g_object_get(entry_a, "host_name", &a_name, NULL);
 //     g_object_get(entry_b, "host_name", &b_name, NULL);
@@ -392,34 +467,36 @@ static gint list_compare_items_func(gconstpointer a, gconstpointer b, gpointer u
 //     return result;
 }
 
-void list_update_item(nm_host *host){
-    g_assert(host != NULL);
-
-    HostItem *host_item;
-    guint list_len = g_list_model_get_n_items(G_LIST_MODEL(window.list_store));
-    for(int i=0; i<list_len; i++){
-        host_item = g_list_model_get_item(G_LIST_MODEL(window.list_store), i);
-        if(host->ip && host_item->host_ipv4 && strcmp(host_item->host_ipv4, host->ip) == 0){
-            // update the item
-            host_item_update_from_host(host_item, host);
-            g_list_store_remove(window.list_store, i);
-            g_list_store_insert_sorted(window.list_store, host_item, list_compare_items_func, NULL);
-            return;
-        //TODO: Add IPv6 Comparison
-//        }else if(host->ip == NULL && host->ip6 != NULL && host_item->host_ipv6 && strcmp(host_item->host_ipv6, host->ip6) == 0){
-//            //update the item
-//            return;
-        }
-    }
-    //not found, add it.
-    list_add_item(host);
-}
+// void list_update_item(nm_host *host){
+//     g_assert(host != NULL);
+// 
+//     HostItem *host_item;
+//     guint list_len = g_list_model_get_n_items(G_LIST_MODEL(window.list_store));
+//     for(int i=0; i<list_len; i++){
+//         host_item = g_list_model_get_item(G_LIST_MODEL(window.list_store), i);
+//         if(host->ip && host_item->host_ipv4 && strcmp(host_item->host_ipv4, host->ip) == 0){
+//             // update the item
+//             host_item_update_from_host(host_item, host);
+//             g_list_store_remove(window.list_store, i);
+//             g_list_store_insert_sorted(window.list_store, host_item, list_compare_items_func, NULL);
+//             return;
+//         //TODO: Add IPv6 Comparison
+// //        }else if(host->ip == NULL && host->ip6 != NULL && host_item->host_ipv6 && strcmp(host_item->host_ipv6, host->ip6) == 0){
+// //            //update the item
+// //            return;
+//         }
+//     }
+//     //not found, add it.
+//     list_add_item(host);
+// }
 
 
 void list_add_item(nm_host *host){
     g_assert(host != NULL);
 
     // array will hold string copies and goes into entry_item object
+    GArray *other_ip4_array = copy_string_list_as_array(host->list_ip);
+    GArray *other_ip6_array = copy_string_list_as_array(host->list_ip6);
     GArray *services_array = copy_string_list_as_array(host->list_services);//nm_copy_string_list_as_array(host->services);
 
     HostItem *obj = g_object_new(host_item_get_type(),
@@ -428,6 +505,8 @@ void list_add_item(nm_host *host){
                                  "host_ipv4", host->ip,
                                  "host_ipv6", host->ip6,
                                  "host_hw_addr", host->hw_addr,
+                                 "host_other_ip4", other_ip4_array,
+                                 "host_other_ip6", other_ip6_array,
                                  "host_services", services_array,
                                  NULL);
     g_list_store_insert_sorted(window.list_store, obj, list_compare_items_func, NULL);
@@ -436,36 +515,12 @@ void list_add_item(nm_host *host){
 
 
 
-static void build_info_dialog() {
-    GtkWidget *dialog = gtk_dialog_new();
-    gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 300);
-    gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
-    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-
-    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_box_pack_start(GTK_BOX(box), gtk_label_new("Hello First Row"), FALSE, TRUE, 2);
-    gtk_container_add(GTK_CONTAINER(content), box);
-
-    GtkWidget *header = gtk_header_bar_new();
-    gtk_header_bar_set_title(GTK_HEADER_BAR(header), "Network List Info");
-    gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(header), TRUE);
-    gtk_window_set_titlebar(GTK_WINDOW(dialog), header);
-
-    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(window.window));
-    gtk_widget_show_all(dialog);
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-
-
-}
-
-
 gboolean refresh_results(gpointer data) {
     puts("Refreshing results");
     
     scan_state *state = scan_getstate();
     nm_list_foreach(h, state->hosts)
-        list_update_item(h->data);
+        list_add_item(h->data);
 
     gtk_widget_hide(window.spinner);
     gtk_widget_show(window.refresh_button);
@@ -477,53 +532,14 @@ gboolean refresh_results(gpointer data) {
 gpointer refresh_thread(gpointer data) {
     puts("Refreshing hosts...");
 
-    
-    
     scan_start();
-
     scan_stop();
-    
     g_idle_add (refresh_results, NULL);
     
-//     scan_state *state = scan_getstate();
-//     nm_list_foreach(h, state->hosts)
-//         list_update_item(h->data);
-// 
-//     gtk_widget_hide(window.spinner);
-//     gtk_widget_show(window.refresh_button);
-    
     return NULL;
-    
-//     GThread *thread;
-//     GError *error;
-//     thread = g_thread_try_new("ScanThread", scan_start_cli_thread, on_scan_event, &error);
-//     if(error == NULL){
-//         puts("Error starting the scan thread");
-//         return;
-//     }
-//     g_thread_unref(thread);
 }
 
 void refresh_hosts() {
-
-//     puts("Refreshing hosts...");
-// 
-//     gtk_spinner_start(GTK_SPINNER(window.spinner));
-//     gtk_widget_show(window.spinner);
-//     gtk_widget_hide(window.refresh_button);
-// 
-//     g_list_store_remove_all(window.list_store);
-//     
-//     
-//     scan_start();
-//     scan_stop();
-//     gtk_widget_hide(window.spinner);
-//     gtk_widget_show(window.refresh_button);
-//     
-//     //if(state->localhost)
-//         //list_update_item(state->localhost);
-//     nm_list_foreach(h, state->hosts)
-//         list_update_item(h->data);
     
     gtk_spinner_start(GTK_SPINNER(window.spinner));
     gtk_widget_show(window.spinner);
@@ -542,12 +558,8 @@ void refresh_hosts() {
 
 
 void on_more_info_clicked(GtkWidget *widget, gpointer user_data){
-    printf("on_more_info_clicked\n");
-    HostItem *host_item = (HostItem *)user_data;
-    if(host_item && host_item->host_ipv4){
-        puts(host_item->host_ipv4);
-    }
-    build_info_dialog();
+//     printf("on_more_info_clicked\n");
+//     HostItem *host_item = (HostItem *)user_data;
 }
 
 

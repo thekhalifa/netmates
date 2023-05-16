@@ -38,13 +38,16 @@ typedef struct {
 
 typedef struct{
     GObject parent;
-    gchar  *host_name;
     gint    host_type;
+    gchar  *host_name;
     gchar  *host_ipv4;
     gchar  *host_ipv6;
     gchar  *host_hw_addr;
+    GArray *host_other_ip4;
+    GArray *host_other_ip6;
     GArray *host_services;
 } HostItem;
+
 
 static char *
 create_label_text_for_host(HostItem *host_item);
