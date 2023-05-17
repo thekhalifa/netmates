@@ -47,6 +47,7 @@ typedef struct {
     char *netmask;
     char *hostname;
     char *hw_addr;
+    char *hw_vendor;
     nmlist *list_ip;
     nmlist *list_ip6;
     nmlist *list_services;

@@ -1234,8 +1234,11 @@ void scan_start() {
     }
     
     if(!scan.opt_known_only){
-        printf("- Starting scan...\n");
+        printf("- Starting scan for %i milliseconds...\n", scan.opt_scan_timeout_ms);
         scan_discover_subnet(scan.opt_connect_threads > 0, scan.opt_listen_threads > 0);
+        //refresh ARP tables
+        int arps_found = scan_list_arp_hosts();
+        log_info("Updated ARP entries found: %d", arps_found);
         puts("- Results: -->");
         if(scan.opt_print)
             scan_print_mates(scan.hosts, false);

@@ -81,12 +81,16 @@ nmlist *nm_host_merge_in_list(nmlist *list, nm_host *newhost) {
             foundhost = host;
             break;
         }
+        if (newhost->hw_addr && host->hw_addr && (!strcmp(newhost->hw_addr, host->hw_addr))) {
+            foundhost = host;
+            break;
+        }
         
     }
     
     if(foundhost){
-        log_trace("nm_host_merge_in_list: found matching host, merging %s with %s",
-                    nm_host_label(newhost), nm_host_label(foundhost));
+        //log_trace("nm_host_merge_in_list: found matching host, merging %s with %s",
+        //            nm_host_label(newhost), nm_host_label(foundhost));
         nm_host_merge(foundhost, newhost);
         return list;
     }
@@ -306,14 +310,14 @@ void nm_host_merge(nm_host *dst, nm_host *src){
         dst->hostname = strdup(src->hostname);
     }else if(nm_string_len(dst->hostname) && nm_string_len(src->hostname) && 
                 strcmp(dst->hostname, src->hostname)){
-        log_warn("nm_host_merge: found conflicting hostnames: %s, %s", dst->hostname, src->hostname);
+        log_trace("nm_host_merge: found conflicting hostnames: %s, %s", dst->hostname, src->hostname);
     }
 
     if(dst->hw_addr == NULL && nm_string_len(src->hw_addr) > 0){
         dst->hw_addr = strdup(src->hw_addr);
     }else if(nm_string_len(dst->hw_addr) && nm_string_len(src->hw_addr) && 
                 strcmp(dst->hw_addr, src->hw_addr)){
-        log_warn("nm_host_merge: found conflicting hw_addr: %s, %s", dst->hw_addr, src->hw_addr);
+        log_trace("nm_host_merge: found conflicting hw_addr: %s, %s", dst->hw_addr, src->hw_addr);
     }
 
     //ip

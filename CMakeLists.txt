@@ -46,7 +46,8 @@ if (PKG_CONFIG_FOUND)
     target_include_directories(netmates-gui PRIVATE src/)
     set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C}
             PROPERTIES GENERATED TRUE)
-    add_dependencies(netmates-gui nmgui-resource)
+    # netmates target not required here, but nicer for IDE integration
+    add_dependencies(netmates-gui netmates nmgui-resource)
     target_link_libraries(netmates-gui PkgConfig::gtk)
 endif()
 
