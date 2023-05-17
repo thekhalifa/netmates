@@ -19,7 +19,7 @@ struct {
     int arg_subnet_offset;
 }  nm_app = {
     .log_level = LOG_INFO,
-    .arg_known_only = false,
+    .arg_known_only = true,
     .arg_known_first = false,
     .arg_skip_resolve = false,
     .arg_scan_only = false,

@@ -18,6 +18,8 @@ void nm_host_destroy(nm_host *host) {
     free(host->netmask);
     free(host->hostname);
     free(host->hw_addr);
+    free(host->hw_if.addr);
+    free(host->hw_if.vendor);
 
     nm_list_free(host->list_ip, true);
     nm_list_free(host->list_ip6, true);
@@ -33,7 +35,8 @@ void nm_host_set_type(nm_host *host, enum nm_host_type type) {
         host->type = type;
 }
 
-void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, char *hw_addr, char *hostname){
+void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, 
+                            char *hw_addr, hw_details hw_if, char *hostname){
     assert(host != NULL);
 
     if(nm_string_len(ip))
@@ -53,9 +56,36 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, c
         if(host->hw_addr == NULL)
             host->hw_addr = strdup(hw_addr);
         else if(strcmp(host->hw_addr, hw_addr))
-            log_warn("nm_host_set_attributes: found conflicting hostnames: %s, %s", host->hw_addr, hw_addr);
+            log_warn("nm_host_set_attributes: found conflicting hw_addr: %s, %s", host->hw_addr, hw_addr);
+    }
+    
+    if(nm_string_len(hw_if.addr) && host->hw_if.addr == NULL){
+        host->hw_if.addr = strdup(hw_if.addr);
+        host->hw_if.vendor = strdup(hw_if.vendor);
+    }else if(nm_string_len(hw_if.addr)){
+        //replace addr with a longer string
+        char addr[NM_MAX_BUFF_HWADDR];
+        char vendor[NM_MAX_BUFF_HWADDR];
+        snprintf(addr, NM_MAX_BUFF_HWADDR, "%s, %s", host->hw_if.addr, hw_if.addr);
+        snprintf(vendor, NM_MAX_BUFF_HWADDR, "%s, %s", 
+                 host->hw_if.vendor ? host->hw_if.vendor : "", 
+                 hw_if.vendor ? hw_if.vendor : "");
+        free(host->hw_if.addr);
+        free(host->hw_if.vendor);
+        host->hw_if.addr = strdup(addr);
+        host->hw_if.vendor = strdup(vendor);
+//         else if(strcmp(host->hw_if.addr, hw_if.addr))
+//             log_warn("nm_host_set_attributes: found conflicting interfaces: %s, %s", host->hw_if.addr, hw_if.addr);
+// 
+//         if(hw_if.vendor && host->hw_if.vendor == NULL)
+//             host->hw_if.vendor = strdup(hw_if.vendor);
+//         else if(strcmp(host->hw_if.vendor, hw_if.vendor))
+//             log_warn("nm_host_set_attributes: found conflicting interface vendors: %s, %s", host->hw_if.vendor, hw_if.vendor);
     }
 
+
+    
+    
     if(nm_string_len(netmask)){
         if(host->netmask == NULL)
             host->netmask = strdup(netmask);
@@ -82,6 +112,10 @@ nmlist *nm_host_merge_in_list(nmlist *list, nm_host *newhost) {
             break;
         }
         if (newhost->hw_addr && host->hw_addr && (!strcmp(newhost->hw_addr, host->hw_addr))) {
+            foundhost = host;
+            break;
+        }
+        if (newhost->hw_if.addr && host->hw_if.addr && (!strcmp(newhost->hw_if.addr, host->hw_if.addr))) {
             foundhost = host;
             break;
         }
@@ -130,6 +164,13 @@ void nm_host_print(nm_host *host) {
 
     if(host->hw_addr)
         printf("   MAC:   %s\n", host->hw_addr);
+    
+    if(host->hw_if.addr){
+        if(host->hw_if.vendor)
+            printf("   MAC:   %s [%s]\n", host->hw_if.addr, host->hw_if.vendor);
+        else
+            printf("   MAC:   %s\n", host->hw_if.addr);
+    }
 
     if(host->list_services == NULL)
         return;
@@ -149,9 +190,12 @@ void nm_host_print_wide(nm_host *host) {
     char *ip = host->ip ? host->ip : "";
     char *ip6 = host->ip6 ? host->ip6 : "";
     char *hw = host->hw_addr ? host->hw_addr : "";
+    char *hwaddr = host->hw_if.addr ? host->hw_if.addr : "";
+    char *hwvendor = host->hw_if.vendor ? host->hw_if.vendor : "";
     
-    printf("+ %-8s-> %-15s\t%-22s\t%-12s\t%s\n",
-           type, ip, ip6, hostname, hw);
+    //TODO: Fixup
+    printf("+ %-8s-> %-15s\t%-22s\t%-12s\t%s - %17s\t%s\n",
+           type, ip, ip6, hostname, hw, hwaddr, hwvendor);
     
     nmlist *ipnode = host->list_ip;
     nmlist *ip6node = host->list_ip6;
@@ -249,6 +293,8 @@ const char *nm_host_label(nm_host *host) {
         return host->ip6;
     if(host->hw_addr)
         return host->hw_addr;
+    if(host->hw_if.addr)
+        return host->hw_if.addr;
     
     return NULL;
 
@@ -318,6 +364,25 @@ void nm_host_merge(nm_host *dst, nm_host *src){
     }else if(nm_string_len(dst->hw_addr) && nm_string_len(src->hw_addr) && 
                 strcmp(dst->hw_addr, src->hw_addr)){
         log_trace("nm_host_merge: found conflicting hw_addr: %s, %s", dst->hw_addr, src->hw_addr);
+    }
+    
+    if(dst->hw_if.addr == NULL && nm_string_len(src->hw_if.addr) > 0){
+        dst->hw_if.addr = strdup(src->hw_if.addr);
+    }else if(nm_string_len(dst->hw_if.addr) && nm_string_len(src->hw_if.addr) && 
+                strcmp(dst->hw_if.addr, src->hw_if.addr)){
+        //replace addr with a longer string
+        char addr[NM_MAX_BUFF_HWADDR];
+        char vendor[NM_MAX_BUFF_HWADDR];
+        snprintf(addr, NM_MAX_BUFF_HWADDR, "%s, %s", dst->hw_if.addr, src->hw_if.addr);
+        snprintf(vendor, NM_MAX_BUFF_HWADDR, "%s, %s", dst->hw_if.vendor, src->hw_if.vendor);
+        snprintf(vendor, NM_MAX_BUFF_HWADDR, "%s, %s", 
+                 dst->hw_if.vendor ? dst->hw_if.vendor : "",
+                 src->hw_if.vendor ? src->hw_if.vendor : "");
+        free(dst->hw_if.addr);
+        free(dst->hw_if.vendor);
+        dst->hw_if.addr = strdup(addr);
+        dst->hw_if.vendor = strdup(vendor);
+        //log_trace("nm_host_merge: found conflicting interface: %s, %s", dst->hw_if.addr, src->hw_if.addr);
     }
 
     //ip

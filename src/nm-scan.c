@@ -557,10 +557,10 @@ void scan_process_result(scan_result *result, int *live_counter) {
         ip = inet_ntoa(result->target_addr);
         host = nm_host_init(result->host_type);
         if(result->hostname != NULL) {
-            nm_host_set_attributes(host, ip, NULL, NULL, NULL, result->hostname);
+            nm_host_set_attributes(host, ip, NULL, NULL, NULL, HW_IFACE_NULL, result->hostname);
             //printf("  --> SCAN %s, found Live host [%s] [%s]\n", dir, ip, result->hostname);
         }else {
-            nm_host_set_attributes(host, ip, NULL, NULL, NULL, ip);
+            nm_host_set_attributes(host, ip, NULL, NULL, NULL, HW_IFACE_NULL, ip);
             //printf("  --> SCAN %s, found Live host [%s]\n", dir, ip);
         }
         if(result->services)
@@ -1016,8 +1016,13 @@ int scan_list_arp_hosts(){
 
     char line[NM_GEN_BUFFSIZE], ip_buffer[NM_MAX_BUFF_IP], host_buffer[NM_MAX_BUFF_HOST];
     char hw_addr[NM_MAX_BUFF_HWADDR];
+    char hw_vendor[NM_MAX_BUFF_HWADDR];
     int num_tokens, type, flags, num_lines, num_found = 0;
 
+    hw_details hw_if;
+    hw_if.addr = hw_addr;
+    hw_if.vendor = hw_vendor;
+        
     if ((arp_fd = fopen("/proc/net/arp", "r")) == NULL) {
         perror("Error opening arp table");
         return 0;
@@ -1039,14 +1044,14 @@ int scan_list_arp_hosts(){
             continue;
 
         if(!scan.opt_skip_resolve)
-            nm_update_hw_vendor(hw_addr, sizeof(hw_addr));
+            nm_update_hw_vendor2(hw_vendor, sizeof(hw_vendor), hw_addr);
 
         entry = nm_host_init(HOST_TYPE_UNKNOWN);
         entry->ip_addr = inet_addr(ip_buffer);
         if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buffer, sizeof(host_buffer)))
-            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, host_buffer);
+            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, hw_if, host_buffer);
         else
-            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, NULL);
+            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_addr, hw_if, NULL);
 
         scan.hosts = nm_host_merge_in_list(scan.hosts, entry);
         num_found++;
@@ -1085,9 +1090,9 @@ int scan_list_gateways() {
                 gw_host = nm_host_init(HOST_TYPE_ROUTER);
                 inet_ntop(AF_INET, &gateway.s_addr, ip_buffer, sizeof(ip_buffer));
                 if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buffer, sizeof(host_buffer)))
-                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, host_buffer);
+                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, HW_IFACE_NULL, host_buffer);
                 else
-                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, NULL);
+                    nm_host_set_attributes(gw_host, ip_buffer, NULL, NULL, NULL, HW_IFACE_NULL, NULL);
 
                 scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host);
                 num_ip4_found++;
@@ -1119,9 +1124,9 @@ int scan_list_gateways() {
             // log_trace("Printing IPv6 %s", ip6_buffer);
 
             if(!scan.opt_skip_resolve && scan_resolve_hostname6(ip6_buffer, host_buffer, sizeof(host_buffer)))
-                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, host_buffer);
+                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, HW_IFACE_NULL, host_buffer);
             else
-                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, NULL);
+                nm_host_set_attributes(gw_host6, NULL, ip6_buffer, NULL, NULL, HW_IFACE_NULL, NULL);
 
             scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host6);
 
@@ -1137,9 +1142,13 @@ int scan_list_gateways() {
 bool scan_list_localhost() {
     int family;
     struct ifaddrs *if_addr, *ifa;
-    char ip_buffer[NM_MAX_BUFF_IP], host_buff[NM_MAX_BUFF_HOST];
-    char ip6_buffer[NM_MAX_BUFF_IP6], hwaddr_buffer[NM_MAX_BUFF_HWADDR];
-
+    char ip_buffer[NM_MAX_BUFF_IP];
+    char host_buff[NM_MAX_BUFF_HOST];
+    char ip6_buffer[NM_MAX_BUFF_IP6];
+    char hwaddr_buffer[NM_MAX_BUFF_HWADDR];
+    char hwvendor_buffer[NM_MAX_BUFF_HWADDR];
+    hw_details hw_if = {hwaddr_buffer, hwvendor_buffer};
+    
     assert(scan.localhost == NULL);
     scan.localhost = nm_host_init(HOST_TYPE_LOCALHOST);
 
@@ -1160,25 +1169,25 @@ bool scan_list_localhost() {
 
             //update ip and hostname, where hostname is host or ip, whichever we have
             if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buff, sizeof(host_buff)))
-                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, host_buff);
+                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, HW_IFACE_NULL, host_buff);
             else
-                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, NULL);
+                nm_host_set_attributes(scan.localhost, ip_buffer, NULL, NULL, NULL, HW_IFACE_NULL, NULL);
             
             if(ifa->ifa_netmask != NULL){
                 struct sockaddr_in *nmv = (struct sockaddr_in*)ifa->ifa_netmask;
-                nm_host_set_attributes(scan.localhost, NULL, NULL, inet_ntoa(nmv->sin_addr), NULL, NULL);
+                nm_host_set_attributes(scan.localhost, NULL, NULL, inet_ntoa(nmv->sin_addr), NULL, HW_IFACE_NULL, NULL);
             }
 
         } else if (family == AF_INET6) {
             inet_ntop(AF_INET6, &((struct sockaddr_in6 *) ifa->ifa_addr)->sin6_addr, ip6_buffer, sizeof(ip6_buffer));
-            nm_host_set_attributes(scan.localhost, NULL, ip6_buffer, NULL, NULL, NULL);
+            nm_host_set_attributes(scan.localhost, NULL, ip6_buffer, NULL, NULL, HW_IFACE_NULL, NULL);
         } else if (family == AF_PACKET) {
             log_trace("scan_list_localhost: packet going into buffer");
             nm_format_hw_address(hwaddr_buffer, sizeof(hwaddr_buffer), (struct sockaddr_ll *) ifa->ifa_addr);
             log_trace("scan_list_localhost: formatted %s into buffer", hwaddr_buffer);
             if(!scan.opt_skip_resolve)
-                nm_update_hw_vendor(hwaddr_buffer, sizeof(hwaddr_buffer));
-            nm_host_set_attributes(scan.localhost, NULL, NULL, NULL, hwaddr_buffer, NULL);
+                nm_update_hw_vendor2(hwvendor_buffer, sizeof(hwvendor_buffer), hwaddr_buffer);
+            nm_host_set_attributes(scan.localhost, NULL, NULL, NULL, hwaddr_buffer, hw_if, NULL);
         }
     }
     freeifaddrs(if_addr);

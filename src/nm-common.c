@@ -294,6 +294,30 @@ void nm_update_hw_vendor(char *hw_addr, int size) {
         snprintf(hw_addr+len, free_space, " [%s]", vendor_org);
 }
 
+void nm_update_hw_vendor2(char *hw_vendor, size_t size, const char *hw_addr){
+    assert(hw_vendor != NULL);
+    
+    snprintf(hw_vendor, size, "%s", "");
+    if(hw_addr == NULL || strlen(hw_addr) == 0){
+        return;
+    }
+
+    if(strlen(hw_addr) < NM_HWADDR_STRLEN)
+        return;
+    
+    int tokens;
+    char addr_buffer[32];
+    tokens = sscanf(hw_addr, "%c%c:%c%c:%c%c:%*s", &addr_buffer[0], &addr_buffer[1],
+                            &addr_buffer[2], &addr_buffer[3], &addr_buffer[4], &addr_buffer[5]);
+    addr_buffer[6] = 0;
+    if(tokens != 6 || strlen(addr_buffer) != 6)
+        return;
+
+    const char *vendor_org = vendor_db_query(addr_buffer);
+    if(vendor_org != NULL)
+        snprintf(hw_vendor, size, "[%s]", vendor_org);
+}
+
 
 void nm_log_trace_buffer(const char *sign, const void *buffer, int len){
     

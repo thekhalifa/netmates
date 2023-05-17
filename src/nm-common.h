@@ -22,6 +22,7 @@
 #define NM_LARGE_BUFFSIZE BUFSIZ
 #define NM_MAX_BUFF_HOST 128
 #define NM_MAX_BUFF_HWADDR 128
+#define NM_HWADDR_STRLEN 17
 #define NM_MAX_BUFF_IP INET_ADDRSTRLEN
 #define NM_MAX_BUFF_IP6 INET6_ADDRSTRLEN
 #define NL_MIN_NETMASK_VALUE 0x00FFFFFF
@@ -46,7 +47,6 @@ typedef struct {
 //typedef GArray nmarray;
 typedef GList nmlist;
 typedef GHashTable nmtable;
-
 
 
 /* get current time in milliseconds */
@@ -79,6 +79,7 @@ void        nm_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_l
 void        nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll);
 bool        nm_validate_hw_address(char *address, int real_address);
 void        nm_update_hw_vendor(char *hw_addr, int size);
+void        nm_update_hw_vendor2(char *hw_vendor, size_t size, const char *hw_addr);
 
 void        nm_log_trace_buffer(const char *sign, const void *buffer, int len);
 void        nm_log_trace_bytes(const char *sign, const uint8_t *data, int len);

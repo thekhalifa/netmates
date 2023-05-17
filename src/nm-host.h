@@ -23,6 +23,15 @@ enum nm_host_type{
     HOST_TYPE_LENGTH
 };
 
+struct hw_details {
+    char *addr;
+    char *vendor;
+};
+
+typedef struct hw_details hw_details;
+
+static hw_details HW_IFACE_NULL;
+
 static char *nm_host_type_labels[] = {
         "?",
         "local",
@@ -47,7 +56,7 @@ typedef struct {
     char *netmask;
     char *hostname;
     char *hw_addr;
-    char *hw_vendor;
+    hw_details hw_if; 
     nmlist *list_ip;
     nmlist *list_ip6;
     nmlist *list_services;
@@ -59,7 +68,7 @@ nm_host    *nm_host_init(enum nm_host_type type);
 void        nm_host_destroy(nm_host *host);
 void        nm_host_set_type(nm_host *host, enum nm_host_type type);
 void        nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, 
-                                   char *hw_addr, char *hostname);
+                                   char *hw_addr, hw_details hw_if, char *hostname);
 void        nm_host_add_services(nm_host *host, nmlist *services);
 void        nm_host_print(nm_host *host);
 void        nm_host_print_wide(nm_host *host);
