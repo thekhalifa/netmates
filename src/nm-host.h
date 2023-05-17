@@ -6,6 +6,8 @@
 //typedef nmarray      HostArray;      /* type for host* array */
 //typedef nmlist       HothList;       /* type for other field linked lists */
 
+#define NM_HOST_PORT_BUFFER 8
+#define NM_HOST_PORT_METHOD_BUFFER 8
 
 /* order of priority is lower number overrides the highs when a merge of
  * two hosts happens - except localhost  */
@@ -27,8 +29,8 @@ struct hw_details {
     char *addr;
     char *vendor;
 };
-
 typedef struct hw_details hw_details;
+
 
 static hw_details HW_IFACE_NULL;
 
@@ -55,11 +57,11 @@ typedef struct {
     char *ip6;
     char *netmask;
     char *hostname;
-    char *hw_addr;
     hw_details hw_if; 
     nmlist *list_ip;
     nmlist *list_ip6;
     nmlist *list_services;
+    nmlist *list_ports;
 } nm_host;
 
 
@@ -68,8 +70,9 @@ nm_host    *nm_host_init(enum nm_host_type type);
 void        nm_host_destroy(nm_host *host);
 void        nm_host_set_type(nm_host *host, enum nm_host_type type);
 void        nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, 
-                                   char *hw_addr, hw_details hw_if, char *hostname);
+                                   hw_details hw_if, char *hostname);
 void        nm_host_add_services(nm_host *host, nmlist *services);
+void        nm_host_add_ports(nm_host *host, nmlist *ports);
 void        nm_host_print(nm_host *host);
 void        nm_host_print_wide(nm_host *host);
 const char *nm_host_label(nm_host *host);

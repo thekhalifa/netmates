@@ -18,8 +18,8 @@ struct {
     int arg_scan_timeout;
     int arg_subnet_offset;
 }  nm_app = {
-    .log_level = LOG_INFO,
-    .arg_known_only = true,
+    .log_level = LOG_DEBUG,
+    .arg_known_only = false,
     .arg_known_first = false,
     .arg_skip_resolve = false,
     .arg_scan_only = false,
@@ -27,8 +27,8 @@ struct {
     .arg_scan_timeout = 5000,
     .arg_max_hosts = -1,
     .arg_conn_timeout = 200,
-    .arg_conn_threads = 0,
-    .arg_list_threads = 10,
+    .arg_conn_threads = 3,
+    .arg_list_threads = 0,
     .arg_subnet_offset = -1,
 };
 

@@ -127,23 +127,6 @@ nm_copy_string_list_as_array(GList *src_list){
 nmlist * nm_list_add(nmlist* to, void *newdata) {
     
     return g_list_append(to, newdata);
-    /*
-    // allocate and set new node
-    nmlist *newnode = malloc(sizeof(nmlist));
-    memset(newnode, 0, sizeof(nmlist));
-    newnode->data = newdata;
-
-    // attach node to list
-    nm_list_foreach(node, to) {
-        if(node->next == NULL){
-            node->next = newnode;
-            newnode->prev = node;
-            break;
-        }
-    }
-    return newnode;
-    */
-    
 }
 
 void nm_list_free(nmlist *list, bool free_data) {
@@ -155,42 +138,13 @@ void nm_list_free(nmlist *list, bool free_data) {
         g_list_free_full(list, free);
     }else {
         g_list_free(list);
-    }
-    
-    /*
-    nmlist *currnode = list;
-    nmlist *nextnode;
-    
-    while(currnode) {
-        nextnode = currnode->next;
-        if(currnode->prev)
-            currnode->prev->next = NULL;
-        
-        if(free_data && currnode->data) {
-            free(currnode->data);
-            currnode->data = NULL;
-        }
-        free(currnode);
-        
-        currnode = nextnode;
-    }
-    */
-    
-
+    }    
 }
 
 
 uint nm_list_len(nmlist *list) {
 
     return g_list_length(list);
-    /*
-    int length = 0;
-    
-    nm_list_foreach(node, list)
-        length++;
-    
-    return length;
-    */
 }
 
 nmlist* nm_list_find_string(nmlist *list, const char *data) {

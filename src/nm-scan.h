@@ -29,6 +29,19 @@ enum scan_method{
     SCAN_TCP_LISTEN,
     SCAN_UDP_SENDRECV,
     SCAN_UDP_RECV,
+    SCAN_METHOD_LENGTH,
+};
+
+#define SCAN_PORT_METHOD_BUFFER_LEN 36
+
+static char *scan_method_label[] = {
+    "?",
+    "tc",
+    "tq",
+    "tl",
+    "uq",
+    "ul",
+    ""
 };
 
 enum scan_host_state{
@@ -56,9 +69,12 @@ typedef struct{
     int opt_max_hosts;
     int opt_subnet_offset;
     //scanner_callback event_cb;
+    int stat_conn_hosts;
+    int stat_list_ports;
     nmlist *hosts;
     nm_host *localhost;
 } scan_state;
+
 
 typedef struct {
     int length;
@@ -69,21 +85,26 @@ typedef struct {
 } scan_range;
 
 
+
+typedef struct scan_port scan_port;
+
 typedef struct scan_result{
     enum scan_host_state response;
     enum nm_host_type host_type;
     char *hostname;
     uint16_t port;
+    bool port_open;
     struct in_addr target_addr;
+    scan_port *port_def;
     nmlist *services;
+    enum scan_method method;
 }scan_result;
 
 
 typedef int (*scan_query_callback)(char *buffer, size_t buffsize, char* data, struct in_addr);
 typedef bool(*scan_response_callback)(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
-
-typedef struct {
+struct scan_port {
     enum scan_method method;
     int port;
     int required;
@@ -98,7 +119,7 @@ typedef struct {
     scan_response_callback response_cb;
     enum nm_host_type host_type;
     proto_def *protocol;
-} scan_port;
+};
 
 
 /* Utils */

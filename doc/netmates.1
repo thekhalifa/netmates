@@ -64,6 +64,26 @@ Output version information and exit.
 .TP
 .B \-h, \-\-help
 Prints the command line options.
+.SH "ADDITIONAL INFORMATION"
+.PP
+Port signatures describe the method that discovered them.
+This will usually show as 80/tc, 53/uq
+.PP
+.TP
+.B tc: TCP Connect
+nothing sent or received, but the host accepted the connection
+.TP
+.B tq: TCP Query
+This is for HTTP where valid query was sent and a response was received
+.TP
+.B tl: TCP Listen
+Nothing sent, but listening
+.TP
+.B uq: UDP Query
+Sending and receiving datagrams on UDP. Known protocols like DNS, MDNS, SSDP
+.TP
+.B ul: UDP Listen
+Bind to port and listen for broadcasts.
 .SH "AUTHOR"
 .PP
 Written by Ahmad Khalifa.

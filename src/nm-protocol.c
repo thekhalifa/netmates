@@ -177,6 +177,9 @@ bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
     if(!key_type)
         return NULL;
     
+    if(!nm_list_find_string(result->services, "ssdp"))
+        result->services = nm_list_add(result->services, strdup("ssdp"));
+    
     //log_trace("probe_ssdp_response - looking for key: %s", key_type);
     //probe_ssdp_process(result, in_buffer, in_size, key_type, num_lines);
     
@@ -483,6 +486,9 @@ bool probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
     pointer += sizeof(message.header);
     if(pointer > endpointer)
         return false;
+    
+    if(!nm_list_find_string(result->services, "mdns"))
+        result->services = nm_list_add(result->services, strdup("mdns"));
     
     //2. questions
     for (int i = 0; i < message.header.qdcount; i++ ) {

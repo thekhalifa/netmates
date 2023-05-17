@@ -20,7 +20,8 @@ enum{
     PROP_HOST_TYPE_LABEL,
     PROP_HOST_IPV4,
     PROP_HOST_IPV6,
-    PROP_HOST_HW,
+    PROP_HOST_HW_ADDR,
+    PROP_HOST_HW_VENDOR,
     PROP_HOST_OTHER_IPV4,
     PROP_HOST_OTHER_IPV6,
     PROP_HOST_SERVICES,
@@ -42,6 +43,7 @@ static void host_item_init(HostItem *obj){
     obj->host_ipv4 = NULL;
     obj->host_ipv6 = NULL;
     obj->host_hw_addr = NULL;
+    obj->host_hw_vendor = NULL;
     obj->host_other_ip4 = NULL;
     obj->host_other_ip6 = NULL;
     obj->host_services = NULL;
@@ -65,8 +67,11 @@ static void host_item_get_property(GObject *obj, guint prop_id, GValue *value, G
         case PROP_HOST_IPV6:
             g_value_set_string(value, item->host_ipv6);
             break;
-        case PROP_HOST_HW:
+        case PROP_HOST_HW_ADDR:
             g_value_set_string(value, item->host_hw_addr);
+            break;
+        case PROP_HOST_HW_VENDOR:
+            g_value_set_string(value, item->host_hw_vendor);
             break;
         case PROP_HOST_OTHER_IPV4:
             g_value_set_boxed(value, item->host_other_ip4);
@@ -105,9 +110,13 @@ static void host_item_set_property(GObject *obj, guint prop_id, const GValue *va
             g_free(item->host_ipv6);
             item->host_ipv6 = g_value_dup_string(value);
             break;
-        case PROP_HOST_HW:
+        case PROP_HOST_HW_ADDR:
             g_free(item->host_hw_addr);
             item->host_hw_addr = g_value_dup_string(value);
+            break;
+        case PROP_HOST_HW_VENDOR:
+            g_free(item->host_hw_vendor);
+            item->host_hw_vendor = g_value_dup_string(value);
             break;
         case PROP_HOST_OTHER_IPV4:
             if(item->host_other_ip4)
@@ -137,6 +146,7 @@ static void host_item_finalize(GObject *obj){
     g_free(item->host_ipv4);
     g_free(item->host_ipv6);
     g_free(item->host_hw_addr);
+    g_free(item->host_hw_vendor);
     g_array_free(item->host_other_ip4, TRUE);
     g_array_free(item->host_other_ip6, TRUE);
     g_array_free(item->host_services, TRUE);
@@ -161,7 +171,9 @@ static void host_item_class_init(HostItemClass *class){
                                                          NULL, G_PARAM_READWRITE);
     host_item_props[PROP_HOST_IPV6] = g_param_spec_string("host_ipv6", "host_ipv6", "host_ipv6",
                                                           NULL, G_PARAM_READWRITE);
-    host_item_props[PROP_HOST_HW] = g_param_spec_string("host_hw_addr", "host_hw_addr", "host_hw_addr",
+    host_item_props[PROP_HOST_HW_ADDR] = g_param_spec_string("host_hw_addr", "host_hw_addr", "host_hw_addr",
+                                                           NULL, G_PARAM_READWRITE);
+    host_item_props[PROP_HOST_HW_VENDOR] = g_param_spec_string("host_hw_vendor", "host_hw_vendor", "host_hw_vendor",
                                                            NULL, G_PARAM_READWRITE);
     host_item_props[PROP_HOST_OTHER_IPV4] = g_param_spec_boxed("host_other_ip4", "host_other_ip4", "host_other_ip4",
                                                              G_TYPE_ARRAY, G_PARAM_READWRITE);
@@ -190,67 +202,14 @@ copy_string_list_as_array(GList *src_list){
     return dst_array;
 }
 
-/*
-static void host_item_update_from_host(HostItem *item, nm_host *host){
-    g_assert(item != NULL);
-    g_assert(host != NULL);
-
-    GValue host_type = G_VALUE_INIT;
-    g_value_init(&host_type, G_TYPE_INT);
-    g_value_set_int(&host_type, host->type);
-    g_object_set_property(G_OBJECT(item), "host_type", &host_type);
-
-    GValue hostname = G_VALUE_INIT;
-    g_value_init(&hostname, G_TYPE_STRING);
-    g_value_set_string(&hostname, host->hostname);
-    g_object_set_property(G_OBJECT(item), "host_name", &hostname);
-
-    GValue ip = G_VALUE_INIT;
-    g_value_init(&ip, G_TYPE_STRING);
-    g_value_set_string(&ip, host->ip);
-    g_object_set_property(G_OBJECT(item), "host_ipv4", &ip);
-
-    GValue ip6 = G_VALUE_INIT;
-    g_value_init(&ip6, G_TYPE_STRING);
-    g_value_set_string(&ip6, host->ip6);
-    g_object_set_property(G_OBJECT(item), "host_ipv6", &ip6);
-
-    GValue hw_addr = G_VALUE_INIT;
-    g_value_init(&hw_addr, G_TYPE_STRING);
-    g_value_set_string(&hw_addr, host->hw_addr);
-    g_object_set_property(G_OBJECT(item), "host_hw_addr", &hw_addr);
-
-    GValue other_ip4 = G_VALUE_INIT;
-    g_value_init(&other_ip4, G_TYPE_ARRAY);
-    GArray *ip4_array = copy_string_list_as_array(host->list_ip);
-    g_value_set_boxed(&other_ip4, ip4_array);
-    g_object_set_property(G_OBJECT(item), "host_other_ip4", &other_ip4);
-    g_array_free(ip4_array, TRUE);
-
-    GValue other_ip6 = G_VALUE_INIT;
-    g_value_init(&other_ip6, G_TYPE_ARRAY);
-    GArray *ip6_array = copy_string_list_as_array(host->list_services);
-    g_value_set_boxed(&other_ip6, ip6_array);
-    g_object_set_property(G_OBJECT(item), "host_other_ip6", &other_ip6);
-    g_array_free(ip6_array, TRUE);
-
-    
-    GValue services = G_VALUE_INIT;
-    g_value_init(&services, G_TYPE_ARRAY);
-    GArray *services_array = copy_string_list_as_array(host->list_services);
-    g_value_set_boxed(&services, services_array);
-    g_object_set_property(G_OBJECT(item), "host_services", &services);
-    g_array_free(services_array, TRUE);
-
-}*/
-
 
 static char *
 create_label_text_for_host(HostItem *host_item){
     static const char *title_format = "<span foreground=\"#338E5E\" size=\"larger\"><b>%s</b></span>";
-    static const char *ipv4_format =        "\n<tt><small>IPv4: %s</small></tt>";
-    static const char *ipv6_format =        "\n<tt><small>IPv6: %s</small></tt>";
-    static const char *hw_format =          "\n<tt><small>MAC:  %s</small></tt>";
+    static const char *ipv4_format =        "\n<tt><small>inet:   %s</small></tt>";
+    static const char *ipv6_format =        "\n<tt><small>inet6:  %s</small></tt>";
+    static const char *hw_format =          "\n<tt><small>link:   %s</small></tt>";
+    static const char *hwv_format =         "\n<tt><small>vendor: %s</small></tt>";
     char buffer[1024];
     int position = 0;
 
@@ -275,7 +234,9 @@ create_label_text_for_host(HostItem *host_item){
         }
     }
     if(host_item->host_hw_addr)
-        sprintf(buffer + position, hw_format, host_item->host_hw_addr);
+        position += sprintf(buffer + position, hw_format, host_item->host_hw_addr);
+    if(host_item->host_hw_vendor)
+        sprintf(buffer + position, hwv_format, host_item->host_hw_vendor);
 
     return g_strdup(buffer);
 }
@@ -287,6 +248,7 @@ create_label_tooltip_text_for_host(HostItem *host_item){
     static const char *ipv4_format =     "\nIPv4:     %s";
     static const char *ipv6_format =     "\nIPv6:     %s";
     static const char *hw_format =       "\nMAC:      %s";
+    static const char *hwv_format =      "\nVendor:   %s";
     static const char *services_format = "\nServices: ";
     static const char *detail_end_format = "</small></tt>";
 
@@ -315,6 +277,8 @@ create_label_tooltip_text_for_host(HostItem *host_item){
     }
     if(host_item->host_hw_addr && strlen(host_item->host_hw_addr) > 0)
         pointer += sprintf(pointer, hw_format, host_item->host_hw_addr);
+    if(host_item->host_hw_vendor && strlen(host_item->host_hw_vendor) > 0)
+        pointer += sprintf(pointer, hwv_format, host_item->host_hw_vendor);
 
     if(host_item->host_services && host_item->host_services->len > 0){
         char *curr_service;
@@ -509,7 +473,8 @@ void list_add_item(nm_host *host){
                                  "host_type_label", nm_host_type(host),
                                  "host_ipv4", host->ip,
                                  "host_ipv6", host->ip6,
-                                 "host_hw_addr", host->hw_addr,
+                                 "host_hw_addr", host->hw_if.addr,
+                                 "host_hw_vendor", host->hw_if.vendor,
                                  "host_other_ip4", other_ip4_array,
                                  "host_other_ip6", other_ip6_array,
                                  "host_services", services_array,
