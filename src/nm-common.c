@@ -21,7 +21,6 @@ void nm_string_toupper(char *str){
     }
 }
 
-
 char *nm_string_extract_token(char *line, char delimiter, int index){
     char *scan_pointer, *scan_delim, delim_str[4], *scan_eol;
     size_t span = 0;
@@ -106,24 +105,6 @@ void nm_string_copy_line(const char *line, size_t line_len, int index, char *cop
 
 }
 
-/*
-GArray *
-nm_copy_string_list_as_array(GList *src_list){
-    char *curr_text;
-    guint list_len = g_list_length(src_list);
-    GList *curr_list = src_list;
-
-    GArray *dst_array = g_array_sized_new(FALSE, FALSE, sizeof(char *), list_len);
-    for(int i=0; i < list_len; i++){
-        curr_text = strdup((char *)curr_list->data);
-        g_array_append_val(dst_array, curr_text);
-        curr_list = curr_list->next;
-    }
-
-    return dst_array;
-}
-*/
-
 nmlist * nm_list_add(nmlist* to, void *newdata) {
     
     return g_list_append(to, newdata);
@@ -157,8 +138,6 @@ nmlist* nm_list_find_string(nmlist *list, const char *data) {
     return NULL;
 }
 
-
-
 nmtable *nm_table_new() {
     return g_hash_table_new(NULL, NULL);
 }
@@ -185,7 +164,6 @@ void nm_format_ip_address(uint32_t ip_addr, char *ip_buffer, ssize_t ip_len) {
     struct in_addr addr;
     addr.s_addr = ip_addr;
     inet_ntop(AF_INET, &addr, ip_buffer, ip_len);
-    
 }
 
 void nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll) {
@@ -195,7 +173,6 @@ void nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll
     int len = 0;
     for(int i=0; i < sa_ll->sll_halen && (len + 3) < buff_len; i++)
         len += sprintf(&buff[len], "%02x%s", sa_ll->sll_addr[i], i + 1 < sa_ll->sll_halen ? ":" : "");
-
 }
 
 bool nm_validate_hw_address(char *address, int real_address) {
@@ -224,8 +201,7 @@ bool nm_validate_hw_address(char *address, int real_address) {
     }
     return true;
 }
-
-
+/*
 void nm_update_hw_vendor(char *hw_addr, int size) {
     if(hw_addr == NULL || strlen(hw_addr) == 0)
         return;
@@ -246,7 +222,7 @@ void nm_update_hw_vendor(char *hw_addr, int size) {
     const char *vendor_org = vendor_db_query(addr_buffer);
     if(vendor_org != NULL)
         snprintf(hw_addr+len, free_space, " [%s]", vendor_org);
-}
+}*/
 
 void nm_update_hw_vendor2(char *hw_vendor, size_t size, const char *hw_addr){
     assert(hw_vendor != NULL);
@@ -324,4 +300,11 @@ void nm_copy_netbytes_to_shorts(uint16_t *buff, const uint8_t *src, size_t len) 
     for (int i = 0; i < len / 2; i++){
         buff[i] = ntohs( src[i*2+1] << 8 | src[i*2]);
     }
+}
+
+void nm_log_set_lock(bool state, void *data){
+    if(state)
+        g_mutex_lock(&nm_log_lock);
+    else
+        g_mutex_unlock(&nm_log_lock);
 }

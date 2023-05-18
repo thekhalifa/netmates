@@ -18,19 +18,20 @@ struct {
     int arg_scan_timeout;
     int arg_subnet_offset;
 }  nm_app = {
-    .log_level = LOG_DEBUG,
+    .log_level = LOG_TRACE,
     .arg_known_only = false,
     .arg_known_first = false,
     .arg_skip_resolve = false,
     .arg_scan_only = false,
     .arg_scan_all = true,
-    .arg_scan_timeout = 5000,
-    .arg_max_hosts = -1,
-    .arg_conn_timeout = 200,
-    .arg_conn_threads = 3,
-    .arg_list_threads = 0,
-    .arg_subnet_offset = -1,
+    .arg_scan_timeout = 60000,
+    .arg_max_hosts = 0,
+    .arg_conn_timeout = 300,
+    .arg_conn_threads = 255,
+    .arg_list_threads = 12,
+    .arg_subnet_offset = 0,
 };
+
 
 void print_version() {
     printf(""NM_APP_NAME" version "NM_APP_VERSION"\n");
@@ -157,6 +158,7 @@ static void signal_setup(){
 int init_application(int argc, char **argv){
 
     log_set_level(nm_app.log_level);
+    log_set_lock(nm_log_set_lock, NULL);
 
     log_debug("Startup");
     process_args(argc, argv);

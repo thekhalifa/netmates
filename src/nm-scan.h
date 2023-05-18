@@ -68,7 +68,6 @@ typedef struct{
     int opt_poll_thread_work_ms;
     int opt_max_hosts;
     int opt_subnet_offset;
-    //scanner_callback event_cb;
     int stat_conn_hosts;
     int stat_list_ports;
     nmlist *hosts;
@@ -111,6 +110,7 @@ struct scan_port {
     int min_time;
     int max_time;
     int bind_port;
+    int bind_fail_confirms;
     int mc_join;
     char *service;
     char *mc_ip;
@@ -154,8 +154,6 @@ void            scan_destroy();
 scan_state     *scan_getstate();
 void            scan_start();
 void            scan_stop();
-
-
 
 
 #endif //NETWORK_MATES_NM_SCAN_H

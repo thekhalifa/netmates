@@ -18,36 +18,19 @@
 #define NM_APP_NAME "netmates"
 #define NM_APP_VERSION  "0.1"
 
+#define NM_SMALL_BUFFSIZE 64
 #define NM_GEN_BUFFSIZE 512
+#define NM_MID_BUFFSIZE 256
 #define NM_LARGE_BUFFSIZE BUFSIZ
-#define NM_MAX_BUFF_HOST 128
-#define NM_MAX_BUFF_HWADDR 128
+#define NM_HOST_STRLEN 128
 #define NM_HWADDR_STRLEN 17
-#define NM_MAX_BUFF_IP INET_ADDRSTRLEN
-#define NM_MAX_BUFF_IP6 INET6_ADDRSTRLEN
 #define NL_MIN_NETMASK_VALUE 0x00FFFFFF
 
 
-/* Basic data structures */
-/*
-typedef struct _nmlist nmlist;
-
-struct _nmlist{
-    nmlist *next;
-    nmlist *prev;
-    void *data;
-};
-
-typedef struct {
-    int size;
-    void *data;
-} nmarray;
-*/
-
-//typedef GArray nmarray;
 typedef GList nmlist;
 typedef GHashTable nmtable;
 
+static GMutex nm_log_lock;
 
 /* get current time in milliseconds */
 unsigned long   nm_time_ms();
@@ -86,6 +69,6 @@ void        nm_log_trace_bytes(const char *sign, const uint8_t *data, int len);
 void        nm_log_bytes_readable(void *data, int len);
 void        nm_copy_netbytes_to_shorts(uint16_t *buff, const uint8_t *src, size_t len);
 
-
+void        nm_log_set_lock(bool state, void *data);
 
 #endif //NETWORK_MATES_NM_COMMON_H

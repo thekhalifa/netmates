@@ -33,7 +33,6 @@
 
 typedef struct scan_result scan_result;
 
-
 typedef struct {
     int length;
     char *message;
@@ -54,7 +53,6 @@ typedef struct proto_def {
     proto_query *queries;
     proto_signature *signatures;
 } proto_def;
-
 
 
 //rfc1035
@@ -97,8 +95,6 @@ typedef struct {
     //rdata;
 } proto_dns_rheader;
 #define PROTO_DNS_RR_HDR_SIZE       10
-//TODO: remove?
-#define PROTO_DNS_RR_SRV_HDR_SIZE   6
 
 typedef struct {
     proto_dns_header     header;
@@ -111,7 +107,6 @@ extern proto_def proto_dns_definition;
 extern proto_def proto_mdns_definition;
 
 
-//bool    probe_ssdp_query(int sd, void *lp);
 int     probe_string_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
 
 bool    probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
@@ -122,12 +117,6 @@ int     probe_dns_generate_query(char *buff, size_t buffsize, char *message, str
 
 int     probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
 bool    probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
-
-
-
-
-
-
 
 
 #endif // NM_PROTOCOL_H_INCLUDED
