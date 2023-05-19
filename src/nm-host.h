@@ -17,7 +17,7 @@ enum nm_host_type{
     HOST_TYPE_PC_WIN,
     HOST_TYPE_PC,
     HOST_TYPE_ANY,
-    HOST_TYPE_DEAD,
+    HOST_TYPE_KNOWN,
     HOST_TYPE_LENGTH
 };
 
@@ -42,7 +42,7 @@ static char *nm_host_type_labels[] = {
         "win pc",
         "pc",
         "anything",
-        "dead",
+        "known",
         NULL
 };
 
@@ -82,5 +82,7 @@ void        nm_host_merge(nm_host *dst, nm_host *src);
 
 nmlist     *nm_host_merge_field(char **dest_field, char *src_field, 
                                      nmlist *dest_list_field, nmlist *src_list_field);
+
+nmlist     *nm_host_sort_list(nmlist *list);
 
 #endif //NETWORK_MATES_NM_HOST_H

@@ -21,7 +21,7 @@ vendor_db_util_extract_token(char *line, int index){
     if(scan_eol == NULL)
         scan_eol = strchr(scan_pointer, 0);
 
-    for(int i=0; i<=index; i++){
+    for(int i=0; (i<=index) && scan_pointer; i++){
         scan_comma = strchr(scan_pointer+1, ',');
         scan_quote = strchr(scan_pointer, '"');
         /* find a comma with no quote, or a comma and quote but comma comes first */
@@ -29,17 +29,20 @@ vendor_db_util_extract_token(char *line, int index){
             if(i == index){
                 *scan_comma = '\0';
                 return scan_pointer;
-            }else{
-                scan_pointer = scan_comma+1;
             }
+            if(scan_comma)
+                scan_pointer = scan_comma+1;
         }else if(scan_quote != NULL){
             scan_endquote = strchr(scan_quote+1, '"');
-            if(i == index){
+            if(scan_endquote && i == index){
                 *scan_quote = '\0';
                 *scan_endquote = '\0';
                 return scan_quote+1;
-            }else{
+            }else if(scan_endquote){
                 scan_pointer = scan_endquote+1;
+            }else{
+                //shouldn't be here, invalid line
+                break;
             }
         }else if(scan_eol != NULL && i == index){ //last token
             *scan_eol = 0;
@@ -107,7 +110,7 @@ vendor_db_init() {
         //extract in reverse order as we break the line buffer
         fld_organisation = vendor_db_util_extract_token(line, 2);
         fld_assignment = vendor_db_util_extract_token(line, 1);
-        if(fld_organisation && fld_assignment){
+        if(nm_string_len(fld_organisation) && nm_string_len(fld_assignment)){
             fld_assignment = strdup(fld_assignment);
             nm_string_toupper(fld_assignment);
             fld_organisation = strdup(fld_organisation);

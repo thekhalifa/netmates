@@ -379,3 +379,38 @@ void nm_host_merge(nm_host *dst, nm_host *src){
     
 }
 
+static int nm_host_sort_compare(const void *data1, const void *data2){
+    
+    const nm_host *left = data1;
+    const nm_host *right = data2;
+    
+    
+    if(left->type == HOST_TYPE_LOCALHOST)
+        return -1;
+    else if(right->type == HOST_TYPE_LOCALHOST)
+        return 1;
+    else if(left->type == HOST_TYPE_ROUTER)
+        return -1;
+    else if(right->type == HOST_TYPE_ROUTER)
+        return 1;
+
+    if(left->ip && right->ip)
+        return strcmp(left->ip, right->ip);
+    
+    if(left->ip6 && right->ip6)
+        return strcmp(left->ip6, right->ip6);
+    
+    if(left->ip && !right->ip)
+        return -1;
+
+    
+    return 1;
+}
+
+nmlist *nm_host_sort_list(nmlist *list) {
+    assert(list != NULL);
+    
+    nmlist *sorted = g_list_sort(list, nm_host_sort_compare);
+    return sorted;
+    
+}

@@ -13,16 +13,12 @@
 #define NM_APPLICATION_UI_FILE "gui/nm-window.ui"
 #define NM_APPLICATION_CSS_FILE "gui/nm-style.css"
 #define NM_RESOURCE_BASE "/ws/khalifa/network-mates/"
+#define NM_APPLICATION_ICON "network-wireless"
 
-#define ICON_TYPE_PHONE "phone"
-#define ICON_TYPE_COMPUTER "computer"
-#define ICON_TYPE_ROUTER "network-wireless"
-#define ICON_TYPE_PRINTER "printer"
-#define ICON_TYPE_LOCALHOST "mark-location"
-#define ICON_TYPE_SMART_TV "tv"
-#define ICON_TYPE_SMART_DEVICE "cpu"
-#define ICON_TYPE_OTHER "help-browser"
-
+struct icon_def {
+    char *icon;
+    char *description;
+} ;
 
 typedef struct {
     GtkApplication *gtk_app;
@@ -31,9 +27,13 @@ typedef struct {
     GtkBuilder *builder;
     GtkWidget *spinner;
     GtkWidget *refresh_button;
+    GtkSpinButton *scan_timeout;
+    GtkSwitch *known_hosts;
+    //GtkMenuButton *main_menu;
     GtkListBox *listbox;
     GListStore *list_store;
     char *host_icons[HOST_TYPE_LENGTH];
+    struct icon_def icons[HOST_TYPE_LENGTH];
 } nm_window;
 
 typedef struct{

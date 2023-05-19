@@ -1,16 +1,31 @@
 #include "nm-appwindow.h"
 
-nm_window window = {
-        .host_icons[HOST_TYPE_UNKNOWN] = ICON_TYPE_OTHER,
-        .host_icons[HOST_TYPE_LOCALHOST] = ICON_TYPE_LOCALHOST,
-        .host_icons[HOST_TYPE_ROUTER] = ICON_TYPE_ROUTER,
-        .host_icons[HOST_TYPE_PHONE] = ICON_TYPE_PHONE,
-        .host_icons[HOST_TYPE_PRINTER] = ICON_TYPE_PRINTER,
-        .host_icons[HOST_TYPE_DEVICE] = ICON_TYPE_SMART_DEVICE,
-        .host_icons[HOST_TYPE_TV] = ICON_TYPE_SMART_TV,
-        .host_icons[HOST_TYPE_PC] = ICON_TYPE_COMPUTER,
-        .host_icons[HOST_TYPE_PC_WIN] = ICON_TYPE_COMPUTER,
-        .host_icons[HOST_TYPE_ANY] = ICON_TYPE_COMPUTER,
+static nm_window window = {
+        .host_icons[HOST_TYPE_UNKNOWN] = "help-browser",
+        .host_icons[HOST_TYPE_LOCALHOST] = "mark-location",
+        .host_icons[HOST_TYPE_ROUTER] = "network-wireless",
+        .host_icons[HOST_TYPE_PHONE] = "phone",
+        .host_icons[HOST_TYPE_PRINTER] = "printer",
+        .host_icons[HOST_TYPE_DEVICE] = "cpu",
+        .host_icons[HOST_TYPE_TV] = "tv",
+        .host_icons[HOST_TYPE_PC] = "computer",
+        .host_icons[HOST_TYPE_PC_MAC] = "computer",
+        .host_icons[HOST_TYPE_PC_WIN] = "computer",
+        .host_icons[HOST_TYPE_ANY] = "computer",
+        .host_icons[HOST_TYPE_KNOWN] = "network-wired",
+        
+        .icons[HOST_TYPE_UNKNOWN] = {"help-browser","Unknown device type"},
+        .icons[HOST_TYPE_LOCALHOST] = {"mark-location","localhost"},
+        .icons[HOST_TYPE_ROUTER] = {"network-wireless","router or gateway device"},
+        .icons[HOST_TYPE_PHONE] = {"phone","smart phone"},
+        .icons[HOST_TYPE_PRINTER] = {"printer","printer or print sharing device"},
+        .icons[HOST_TYPE_DEVICE] = {"cpu","smart device"},
+        .icons[HOST_TYPE_TV] = {"tv","smart TV or streaming device"},
+        .icons[HOST_TYPE_PC] = {"computer","PC or server"},
+        .icons[HOST_TYPE_PC_MAC] = {"computer","Mac computer"},
+        .icons[HOST_TYPE_PC_WIN] = {"computer","Windows computer"},
+        .icons[HOST_TYPE_ANY] = {"computer","Other device"},
+        .icons[HOST_TYPE_KNOWN] = {"network-wired","Previously seen device, but not scanned"},
 };
 
 
@@ -341,11 +356,14 @@ static GtkWidget *list_create_row(gpointer item, gpointer user_data){
     HostItem *entry_item = item;
 
     //left side image
-    char *icon_name = window.host_icons[entry_item->host_type];
-    GtkWidget *row_image = gtk_image_new_from_icon_name(icon_name, GTK_ICON_SIZE_LARGE_TOOLBAR);
+    //char *icon_name = window.host_icons[entry_item->host_type];
+    char *icon = window.icons[entry_item->host_type].icon;
+    char *icon_tip = window.icons[entry_item->host_type].description;
+    GtkWidget *row_image = gtk_image_new_from_icon_name(icon, GTK_ICON_SIZE_LARGE_TOOLBAR);
     GtkWidget *button = gtk_button_new();
     gtk_button_set_image(GTK_BUTTON(button), row_image);
-    gtk_widget_set_tooltip_text(button, entry_item->host_type_label);
+    //gtk_widget_set_tooltip_text(button, entry_item->host_type_label);
+    gtk_widget_set_tooltip_text(button, icon_tip);
     //gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
     gtk_widget_set_size_request(button, 40, 40);
     gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
@@ -435,28 +453,6 @@ static gint list_compare_items_func(gconstpointer a, gconstpointer b, gpointer u
 //     return result;
 }
 
-// void list_update_item(nm_host *host){
-//     g_assert(host != NULL);
-// 
-//     HostItem *host_item;
-//     guint list_len = g_list_model_get_n_items(G_LIST_MODEL(window.list_store));
-//     for(int i=0; i<list_len; i++){
-//         host_item = g_list_model_get_item(G_LIST_MODEL(window.list_store), i);
-//         if(host->ip && host_item->host_ipv4 && strcmp(host_item->host_ipv4, host->ip) == 0){
-//             // update the item
-//             host_item_update_from_host(host_item, host);
-//             g_list_store_remove(window.list_store, i);
-//             g_list_store_insert_sorted(window.list_store, host_item, list_compare_items_func, NULL);
-//             return;
-//         //TODO: Add IPv6 Comparison
-// //        }else if(host->ip == NULL && host->ip6 != NULL && host_item->host_ipv6 && strcmp(host_item->host_ipv6, host->ip6) == 0){
-// //            //update the item
-// //            return;
-//         }
-//     }
-//     //not found, add it.
-//     list_add_item(host);
-// }
 
 
 void list_add_item(nm_host *host){
@@ -483,7 +479,35 @@ void list_add_item(nm_host *host){
     g_object_unref(obj);
 }
 
+void set_options_from_scan() {
+    scan_state *state = scan_getstate();
+    gtk_switch_set_state (window.known_hosts, state->opt_known_only);
+    gtk_spin_button_set_value (window.scan_timeout, (float)state->opt_scan_timeout_ms / 1000);       
+}
 
+void set_scan_from_options() {
+    scan_state *state = scan_getstate();
+    state->opt_known_only = gtk_switch_get_state (window.known_hosts);
+    state->opt_scan_timeout_ms = (int)gtk_spin_button_get_value (window.scan_timeout) * 1000;
+}
+
+void show_scan_started() {
+
+    gtk_spinner_start(GTK_SPINNER(window.spinner));
+    gtk_widget_show(window.spinner);
+    gtk_widget_hide(window.refresh_button);
+
+    
+}
+
+void show_scan_ended() {
+
+    gtk_spinner_stop(GTK_SPINNER(window.spinner));
+    gtk_widget_hide(window.spinner);
+    gtk_widget_show(window.refresh_button);
+
+    
+}
 
 gboolean refresh_results(gpointer data) {
     puts("Refreshing results");
@@ -494,8 +518,7 @@ gboolean refresh_results(gpointer data) {
         list_add_item(h->data);
     }
 
-    gtk_widget_hide(window.spinner);
-    gtk_widget_show(window.refresh_button);
+    show_scan_ended();
     
     return FALSE;
 
@@ -515,9 +538,8 @@ gpointer refresh_thread(gpointer data) {
 
 void refresh_hosts() {
     
-    gtk_spinner_start(GTK_SPINNER(window.spinner));
-    gtk_widget_show(window.spinner);
-    gtk_widget_hide(window.refresh_button);
+    show_scan_started();
+    set_scan_from_options();
 
     GThread *thread;
     GError *error;
@@ -532,13 +554,12 @@ void refresh_hosts() {
 
 void refresh_hosts_known() {
     
-    gtk_spinner_start(GTK_SPINNER(window.spinner));
-    gtk_widget_show(window.spinner);
-    gtk_widget_hide(window.refresh_button);
 
     scan_state *state = scan_getstate();
     bool prev_known = state->opt_known_only;
     state->opt_known_only = true;
+
+    //show_scan_started();
 
     scan_start();
     scan_stop();
@@ -548,8 +569,7 @@ void refresh_hosts_known() {
         list_add_item(h->data);
     }
 
-    gtk_widget_hide(window.spinner);
-    gtk_widget_show(window.refresh_button);
+    show_scan_ended();
     state->opt_known_only = prev_known;
     
     if(!state->opt_known_only)
@@ -558,11 +578,17 @@ void refresh_hosts_known() {
 }
 
 
-void on_more_info_clicked(GtkWidget *widget, gpointer user_data){
-//     printf("on_more_info_clicked\n");
-//     HostItem *host_item = (HostItem *)user_data;
+gboolean on_option_known_hosts_clicked(GtkSwitch *button, gboolean state, gpointer user_data){
+
+    printf("on_option_known_hosts_clicked: new state: %i\n", state);
+    return false;
 }
 
+gboolean on_option_scan_timeout_changed(GtkSpinButton *button, gpointer user_data){
+    
+    printf("on_option_scan_timeout_changed: new value: %i\n", (int)gtk_spin_button_get_value(button));
+    return false;
+}
 
 void on_refresh_clicked(GtkWidget *widget, gpointer user_data){
     refresh_hosts();
@@ -583,11 +609,26 @@ void on_app_activate(GtkApplication *gtkapp, gpointer user_data){
     window.window = GTK_APPLICATION_WINDOW(window.window_widget);
     g_signal_connect(window.window, "destroy", G_CALLBACK(on_window_destroyed), NULL);
 
+    gtk_window_set_icon_name(GTK_WINDOW(window.window), NM_APPLICATION_ICON);
     window.spinner = GTK_WIDGET(gtk_builder_get_object(window.builder, "refresh_spinner"));
     window.refresh_button = GTK_WIDGET(gtk_builder_get_object(window.builder, "refresh_button"));
     gtk_widget_set_size_request(window.spinner, 20, -1);
     gtk_widget_set_size_request(window.refresh_button, 30, -1);
     g_signal_connect(window.refresh_button, "clicked", G_CALLBACK(on_refresh_clicked), NULL);
+
+    //window.main_menu = GTK_MENU_BUTTON(gtk_builder_get_object(window.builder, "main_menu"));
+    window.known_hosts = GTK_SWITCH(gtk_builder_get_object(window.builder, "switch_known_hosts"));
+    window.scan_timeout = GTK_SPIN_BUTTON(gtk_builder_get_object(window.builder, "field_scan_timeout"));
+//     //defaults
+//     gtk_switch_set_state (GTK_SWITCH(known_hosts), false);
+//     gtk_spin_button_set_value (GTK_SPIN_BUTTON(scan_timeout), 5.0f);
+//     //signals
+//     g_signal_connect(known_hosts, "state-set", on_option_known_hosts_clicked, NULL);
+//     g_signal_connect(scan_timeout, "value-changed", on_option_scan_timeout_changed, NULL);
+    
+    
+    
+    //create popover
 
     window.listbox = GTK_LIST_BOX(gtk_builder_get_object(window.builder, "main_listbox"));
     gtk_list_box_set_activate_on_single_click(window.listbox, FALSE);
@@ -611,6 +652,8 @@ void on_app_activate(GtkApplication *gtkapp, gpointer user_data){
     gtk_widget_show_all (GTK_WIDGET(window.window_widget));
     gtk_widget_hide(window.spinner);
     
+    
+    set_options_from_scan();
     refresh_hosts_known();
 }
 

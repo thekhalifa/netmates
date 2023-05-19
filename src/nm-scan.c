@@ -1046,7 +1046,7 @@ int scan_list_arp_hosts(){
         if(!scan.opt_skip_resolve)
             nm_update_hw_vendor2(hw_vendor, sizeof(hw_vendor), hw_addr);
 
-        entry = nm_host_init(HOST_TYPE_DEAD);
+        entry = nm_host_init(HOST_TYPE_KNOWN);
         entry->ip_addr = inet_addr(ip_buffer);
         if(!scan.opt_skip_resolve && scan_resolve_hostname(ip_buffer, host_buffer, sizeof(host_buffer)))
             nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_if, host_buffer);
@@ -1256,6 +1256,7 @@ void scan_start() {
         //refresh ARP tables
         int arps_found = scan_list_arp_hosts();
         log_info("Updated ARP entries found: %d", arps_found);
+        scan.hosts = nm_host_sort_list(scan.hosts);
         puts("- Results: -->");
         if(scan.opt_print)
             scan_print_mates(scan.hosts, false);
