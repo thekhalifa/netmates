@@ -227,7 +227,8 @@ void nm_update_hw_vendor(char *hw_addr, int size) {
 void nm_update_hw_vendor2(char *hw_vendor, size_t size, const char *hw_addr){
     assert(hw_vendor != NULL);
     
-    snprintf(hw_vendor, size, "%s", "");
+    //snprintf(hw_vendor, size, "%s", "");
+    hw_vendor[0] = 0;
     if(hw_addr == NULL || strlen(hw_addr) == 0){
         return;
     }

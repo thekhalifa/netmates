@@ -29,26 +29,12 @@ typedef struct {
     GtkWidget *refresh_button;
     GtkSpinButton *scan_timeout;
     GtkSwitch *known_hosts;
+    GtkSwitch *scan_all;
     //GtkMenuButton *main_menu;
     GtkListBox *listbox;
-    GListStore *list_store;
     char *host_icons[HOST_TYPE_LENGTH];
     struct icon_def icons[HOST_TYPE_LENGTH];
 } nm_window;
-
-typedef struct{
-    GObject parent;
-    gchar  *host_name;
-    gint    host_type;
-    gchar  *host_type_label;
-    gchar  *host_ipv4;
-    gchar  *host_ipv6;
-    gchar  *host_hw_addr;
-    gchar  *host_hw_vendor;
-    GArray *host_other_ip4;
-    GArray *host_other_ip6;
-    GArray *host_services;
-} HostItem;
 
 
 void list_add_item(nm_host *entry);

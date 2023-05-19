@@ -53,7 +53,8 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask,
     
     if(nm_string_len(hw_if.addr) && host->hw_if.addr == NULL){
         host->hw_if.addr = strdup(hw_if.addr);
-        host->hw_if.vendor = strdup(hw_if.vendor);
+        if(hw_if.vendor)
+            host->hw_if.vendor = strdup(hw_if.vendor);
     }else if(nm_string_len(hw_if.addr)){
         //replace addr with a longer string
         char addr[NM_MID_BUFFSIZE];

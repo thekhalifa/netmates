@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=netmates
+Comment=Network discovery tool for local devices
+TryExec=netmates-gui
+Exec=netmates-gui
+Icon=network-wireless
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=Network;Monitor;
+Keywords=System;Network;

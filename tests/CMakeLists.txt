@@ -29,24 +29,22 @@ target_link_libraries(test_protocol PkgConfig::glib)
 add_test(NAME protocol COMMAND test_protocol)
 
 
-
 # Check GTK to test gui
-pkg_check_modules(gtk IMPORTED_TARGET gtk+-3.0)
-if (PKG_CONFIG_FOUND)
+if (WITH_GUI_TESTS)
+    pkg_check_modules(gtk IMPORTED_TARGET gtk+-3.0)
+    if (PKG_CONFIG_FOUND)
+        add_executable(test_window test_window.c
+                        ${SRC}/nm-appwindow.c ${SRC}/nm-appwindow.h
+                        ${SRC}/nm-host.c ${SRC}/nm-host.h
+                        ${SRC}/nm-protocol.c ${SRC}/nm-protocol.h
+                        ${SRC}/nm-scan.c ${SRC}/nm-scan.h
+                        ${COMMON_FILES} ${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C})
+        target_include_directories(test_window PRIVATE ${SRC})
+        target_link_libraries(test_window PkgConfig::gtk)
 
-    add_executable(test_window test_window.c ${SRC}/nm-appwindow.c ${SRC}/nm-appwindow.h
-                    ${SRC}/nm-host.c ${SRC}/nm-host.h
-                    ${SRC}/nm-protocol.c ${SRC}/nm-protocol.h
-                    ${SRC}/nm-scan.c ${SRC}/nm-scan.h
-                    ${COMMON_FILES} ${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C})
-    target_include_directories(test_window PRIVATE ${SRC})
-    target_link_libraries(test_window PkgConfig::gtk)
-
-    set_source_files_properties(${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C}
-            PROPERTIES GENERATED TRUE)
-    add_dependencies(test_window nmgui-resource)
-    
-    add_test(NAME window COMMAND test_window --verbose)
-
+        set_source_files_properties(${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C}
+                PROPERTIES GENERATED TRUE)
+        add_dependencies(test_window nmgui-resource)
+        add_test(NAME window COMMAND test_window --verbose)
+    endif()
 endif()
-

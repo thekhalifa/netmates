@@ -80,7 +80,7 @@ static const scan_port scan_listen_list[] = {
     },
     {.method = SCAN_UDP_RECV, .port = 5353, .service = "mdns", .required = 1,
         .bind_port = 5353, .mc_join = 0, .mc_ip = "224.0.0.251", .bind_fail_confirms = 1,
-        .min_time = 100, .max_time = 10000, 
+        .min_time = 100, .max_time = 30000, 
         .query_cb = NULL, .response_cb = probe_mdns_response,
         .protocol = &proto_mdns_definition,
     },
@@ -92,23 +92,23 @@ static const scan_port scan_listen_list[] = {
     },
     {.method = SCAN_UDP_RECV, .port = 1900, .service = "ssdp", .required = 1,
         .bind_port = 1900, .mc_join = 0, .mc_ip = "239.255.255.250", .bind_fail_confirms = 1,
-        .min_time = 100, .max_time = 10000, 
+        .min_time = 100, .max_time = 30000, 
         .query_cb = NULL, .response_cb = probe_ssdp_response,
         .protocol = &proto_ssdp_definition,
     },
     {.method = SCAN_UDP_RECV, .port = 6771, .service = "bt-lsd", .required = 1,
         .bind_port = 6771, .mc_join = 1, .mc_ip = "239.192.152.143", .bind_fail_confirms = 1,
-        .min_time = 200, .max_time = 5000, 
+        .min_time = 200, .max_time = 30000, 
         .query_cb = NULL, .response_cb = scan_response_ack,
     },
     {.method = SCAN_UDP_RECV, .port = 6667, .service = "tuya", .required = 1, .host_type = HOST_TYPE_DEVICE,
         .bind_port = 6667, .mc_join = 0,
-        .min_time = 200, .max_time = 5000, 
+        .min_time = 200, .max_time = 10000, 
         .query_cb = NULL, .response_cb = scan_response_ack,
     },
     {.method = SCAN_UDP_RECV, .port = 138, .service = "netbios-ds", .required = 1, .host_type = HOST_TYPE_DEVICE,
         .bind_port = 138, .mc_join = 0,
-        .min_time = 200, .max_time = 5000, 
+        .min_time = 200, .max_time = 30000, 
         .query_cb = NULL, .response_cb = scan_response_ack,
     },
 };
@@ -1043,8 +1043,13 @@ int scan_list_arp_hosts(){
         if(!nm_validate_hw_address(hw_addr, 1))
             continue;
 
-        if(!scan.opt_skip_resolve)
+        if(!scan.opt_skip_resolve) {
             nm_update_hw_vendor2(hw_vendor, sizeof(hw_vendor), hw_addr);
+            if(strlen(hw_vendor))
+                hw_if.vendor = hw_vendor;
+            else
+                hw_if.vendor = NULL;
+        }
 
         entry = nm_host_init(HOST_TYPE_KNOWN);
         entry->ip_addr = inet_addr(ip_buffer);
@@ -1257,9 +1262,10 @@ void scan_start() {
         int arps_found = scan_list_arp_hosts();
         log_info("Updated ARP entries found: %d", arps_found);
         scan.hosts = nm_host_sort_list(scan.hosts);
-        puts("- Results: -->");
-        if(scan.opt_print)
+        if(scan.opt_print) {
+            puts("- Results: -->");
             scan_print_mates(scan.hosts, false);
+        }
     }
     
     scan.running = 0;

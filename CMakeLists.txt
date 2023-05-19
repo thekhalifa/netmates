@@ -3,6 +3,7 @@ project(netmates VERSION 0.2 LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 
 set(WITH_TESTS YES)
+set(WITH_GUI_TESTS YES)
 
 
 find_package(PkgConfig REQUIRED)
