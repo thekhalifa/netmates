@@ -10,26 +10,6 @@
 "\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21" \
 "\x00\x01"
 
-//HTTP Header ==>
-//     GET / HTTP/1.1<CR><LF>
-//     User-Agent: Wget/1.21
-//     Accept: */*
-//     Accept-Encoding: identity
-//     Host: 192.168.1.1:5000
-//     Connection: Keep-Alive
-//
-
-//HTTP Response <==
-//     HTTP/1.1 404 Not Found
-//     Content-Type: text/html
-//     Connection: close
-//     Content-Length: 134
-//     Server: OpenWRT/21.02-SNAPSHOT UPnP/1.1 MiniUPnPd/2.2.1
-//     Ext:
-// 
-//     <HTML><HEAD>
-//     </BODY></HTML>
-
 
 typedef struct scan_result scan_result;
 
@@ -49,7 +29,7 @@ typedef struct {
 } proto_query;
 
 typedef struct proto_def {
-    char *send_ip;
+    //char *send_ip;
     proto_query *queries;
     proto_signature *signatures;
 } proto_def;
@@ -107,15 +87,15 @@ extern proto_def proto_dns_definition;
 extern proto_def proto_mdns_definition;
 
 
-int     probe_string_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
+int     probe_string_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
 
 bool    probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
 
-int     probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct in_addr addr);
-int     probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
+int     probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
+int     probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
 
-int     probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr);
+int     probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
 bool    probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
 

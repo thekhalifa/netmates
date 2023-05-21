@@ -53,20 +53,24 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask,
     
     if(nm_string_len(hw_if.addr) && host->hw_if.addr == NULL){
         host->hw_if.addr = strdup(hw_if.addr);
-        if(hw_if.vendor)
+        if(nm_string_len(hw_if.vendor))
             host->hw_if.vendor = strdup(hw_if.vendor);
     }else if(nm_string_len(hw_if.addr)){
         //replace addr with a longer string
         char addr[NM_MID_BUFFSIZE];
-        char vendor[NM_MID_BUFFSIZE];
         snprintf(addr, NM_MID_BUFFSIZE, "%s, %s", host->hw_if.addr, hw_if.addr);
-        snprintf(vendor, NM_MID_BUFFSIZE, "%s, %s", 
-                 host->hw_if.vendor ? host->hw_if.vendor : "", 
-                 hw_if.vendor ? hw_if.vendor : "");
         free(host->hw_if.addr);
-        free(host->hw_if.vendor);
         host->hw_if.addr = strdup(addr);
-        host->hw_if.vendor = strdup(vendor);
+
+        if(nm_string_len(hw_if.vendor)) {
+            char vendor[NM_MID_BUFFSIZE];
+            snprintf(vendor, NM_MID_BUFFSIZE, "%s%s%s", 
+                    host->hw_if.vendor ? host->hw_if.vendor : "", 
+                    hw_if.vendor ? ", " : "",
+                    hw_if.vendor ? hw_if.vendor : "");
+            free(host->hw_if.vendor);
+            host->hw_if.vendor = strdup(vendor);
+        }
     }
     
     if(nm_string_len(netmask)){
@@ -182,6 +186,47 @@ void nm_host_print(nm_host *host) {
 
 
 void nm_host_print_wide(nm_host *host) {
+    assert(host != NULL);
+    assert(host->ip != NULL || host->ip6 != NULL);
+
+    const char *type = nm_host_type_labels[host->type];
+    char *hostname = host->hostname ? host->hostname : "";
+    //char *ip = host->ip ? host->ip : "";
+    //char *ip6 = host->ip6 ? host->ip6 : "";
+    char *ip = host->ip ? host->ip : host->ip6;
+    char *hwaddr = host->hw_if.addr ? host->hw_if.addr : "";
+    char *hwvendor = host->hw_if.vendor ? host->hw_if.vendor : "";
+    
+    printf("+ %-8s\t%-20s\t%-12s\t%17s\t%s\n",
+           type, ip, hostname, hwaddr, hwvendor);
+    
+    nm_list_foreach(n, host->list_ip)
+        printf("  %-8s\t%-20s\n", " ", (char*)n->data);
+
+    //localhost can have both ip/ip6, print the second one
+    if(host->ip && host->ip6)
+        printf("  %-8s\t%-20s\n", " ", host->ip6);
+    nm_list_foreach(n, host->list_ip6)
+        printf("  %-8s\t%-20s\n", " ", (char*)n->data);
+    
+
+    if(host->list_services) {
+        printf("  %-8s\t[", " ");
+        nm_list_foreach(node, host->list_services)
+            printf("%s%s", (char *)node->data, node->next ? ", " : "");
+        printf("]\n");
+    }
+
+    if(host->list_ports) {
+        printf("  %-8s\t[", " ");
+        nm_list_foreach(node, host->list_ports)
+            printf("%s%s", (char *)node->data, node->next ? ", " : "");
+        printf("]\n");
+    }
+}
+
+
+void nm_host_print_wide2(nm_host *host) {
     assert(host != NULL);
     assert(host->ip != NULL || host->ip6 != NULL);
 

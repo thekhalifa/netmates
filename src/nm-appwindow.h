@@ -37,10 +37,12 @@ typedef struct {
 } nm_window;
 
 
-void list_add_item(nm_host *entry);
+//void list_add_item(nm_host *entry);
+void list_box_add_host(nm_host *host);
+void list_box_clear();
 
 void on_refresh_clicked(GtkWidget *widget, gpointer user_data);
-void on_app_activate(GtkApplication *gtkapp, gpointer user_data);
+void on_app_activate(GtkApplication *gtkapp, gpointer should_run);
 
 int init_application(int argc, char **argv);
 

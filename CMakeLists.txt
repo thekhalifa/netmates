@@ -18,6 +18,17 @@ add_executable( netmates src/nm-app.c
                 src/log.h src/log.c)
 target_include_directories(netmates PRIVATE src/)
 target_link_libraries(netmates PkgConfig::glib)
+install(TARGETS netmates DESTINATION bin)
+
+
+
+#install(
+        #FILES "${CMAKE_CURRENT_BINARY_DIR}/ckb-next.desktop"
+        #DESTINATION "share/applications"
+        #PERMISSIONS
+        #OWNER_READ OWNER_WRITE
+        #GROUP_READ
+        #WORLD_READ)
 
 
 # Check GTK to build gui
@@ -50,6 +61,7 @@ if (PKG_CONFIG_FOUND)
     # netmates target not required here, but nicer for IDE integration
     add_dependencies(netmates-gui netmates nmgui-resource)
     target_link_libraries(netmates-gui PkgConfig::gtk)
+    install(TARGETS netmates-gui DESTINATION bin)
 endif()
 
 # Tests

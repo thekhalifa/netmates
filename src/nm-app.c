@@ -2,10 +2,16 @@
 #include "nm-common.h"
 #include "nm-scan.h"
 
+/* colours
+ * red = \e[31m
+ * off = \e[0m
+ */
+
 
 /* Application argument defaults */
 struct {
     int log_level;
+    int tty_colours;
     bool arg_known_only;
     bool arg_known_first;
     bool arg_scan_only;
@@ -19,16 +25,17 @@ struct {
     int arg_subnet_offset;
 }  nm_app = {
     .log_level = LOG_TRACE,
+    .tty_colours = 0,
     .arg_known_only = false,
     .arg_known_first = false,
-    .arg_skip_resolve = false,
+    .arg_skip_resolve = true,
     .arg_scan_only = false,
-    .arg_scan_all = true,
-    .arg_scan_timeout = 60000,
+    .arg_scan_all = false,
+    .arg_scan_timeout = 0,
     .arg_max_hosts = 0,
     .arg_conn_timeout = 300,
-    .arg_conn_threads = 255,
-    .arg_list_threads = 12,
+    .arg_conn_threads = 0,
+    .arg_list_threads = 1,
     .arg_subnet_offset = 0,
 };
 
@@ -36,7 +43,6 @@ struct {
 void print_version() {
     printf(""NM_APP_NAME" version "NM_APP_VERSION"\n");
 }
-
 
 void print_usage() {
     printf("Usage: \n"
@@ -188,5 +194,10 @@ int init_application(int argc, char **argv){
 }
 
 int main (int argc, char **argv){
-    return init_application(argc, argv);    
+    
+    if(isatty(STDOUT_FILENO)){
+        nm_app.tty_colours = 1;
+    }
+    return init_application(argc, argv);
+
 }

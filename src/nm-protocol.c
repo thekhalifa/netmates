@@ -50,7 +50,7 @@ static proto_signature proto_ssdp_signatures[] = {
 
 
 proto_def proto_ssdp_definition = {
-    .send_ip = "239.255.255.250", 
+    //.send_ip = "239.255.255.250", 
     .queries = proto_ssdp_queries,
     .signatures = proto_ssdp_signatures,
 };
@@ -94,7 +94,7 @@ static proto_signature proto_mdns_signatures[] = {
 
 
 proto_def proto_mdns_definition = {
-    .send_ip = "224.0.0.251", 
+    //.send_ip = "224.0.0.251", 
     .queries = proto_mdns_queries,
     .signatures = proto_mdns_signatures,
 };
@@ -109,7 +109,7 @@ proto_def proto_dns_definition = {
     .queries = proto_dns_queries,
 };
 
-int probe_string_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr) {
+int probe_string_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr) {
     
     size_t msgsize = strlen(message);
     msgsize = msgsize > buffsize ? buffsize : msgsize;
@@ -266,10 +266,15 @@ size_t proto_dns_compose_query(uint8_t *buff, size_t bufflen, uint16_t mid, char
 }
 
 /* generate a PTR query to the /addr/ ip 1.2.3.4 becomes 4.3.2.1.in-addr.arpa */
-int probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct in_addr addr){
+int probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr){
     size_t msgsize;
     char query[NM_HOST_STRLEN];
-    uint32_t netaddr = htonl(addr.s_addr);
+    
+    //TODO: Add ipv6 support
+    assert(targetaddr->sa_family == AF_INET);
+
+    struct sockaddr_in *target4 = (struct sockaddr_in*)targetaddr;
+    uint32_t netaddr = htonl(target4->sin_addr.s_addr);
     sprintf(query, "%u.%u.%u.%u.in-addr.arpa", 
             (netaddr & 0xFF), (netaddr & 0xFF00) >> 8, (netaddr & 0xFF0000) >> 16, (netaddr & 0xFF000000) >> 24);
     
@@ -280,7 +285,7 @@ int probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *messag
 }
 
 /* generate a PTR query with /message/ */
-int probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr){
+int probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr){
     size_t msgsize;
     
     msgsize = proto_dns_compose_query((void *)buff, buffsize, 0x5601, 
@@ -290,7 +295,7 @@ int probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct 
 }
 
 /* generate a PTR query with /message/ and UNICAST flag */
-int probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct in_addr addr){
+int probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr){
     size_t msgsize;
     msgsize = proto_dns_compose_query((void *)buff, buffsize, 0x1234, 
                                         message, PROTO_DNS_TYPE_PTR,
@@ -351,7 +356,7 @@ bool probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
         pointer += PROTO_DNS_RR_HDR_SIZE;
         
         log_trace(  "probe_mdns_response: > Answer %i, class: 0x%04hX, "
-                    "type: 0x%04hX, ttl: %i, rdlen: %02hi, size: %zi -> %s\n", 
+                    "type: 0x%04hX, ttl: %i, rdlen: %02hi, size: %zi -> %s", 
                     i + 1, message.rrecord.class, message.rrecord.type, message.rrecord.ttl,
                     message.rrecord.rdlength, retsize, buffer);
         if(message.rrecord.type == PROTO_DNS_TYPE_PTR){

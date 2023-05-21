@@ -202,6 +202,18 @@ static GtkWidget *list_create_list_row(nm_host *host){
     return listboxrow;
 }
 
+void list_box_add_host(nm_host *host) {
+    assert(window.listbox != NULL);
+    gtk_container_add(GTK_CONTAINER(window.listbox), list_create_list_row(host));
+}
+
+void list_box_clear() {
+    assert(window.listbox != NULL);
+    GList *n = gtk_container_get_children(GTK_CONTAINER(window.listbox));
+    for(; n; n = n->next){
+        gtk_widget_destroy(GTK_WIDGET(n->data));
+    }
+}
 
 void set_options_from_scan() {
     scan_state *state = scan_getstate();
@@ -239,15 +251,18 @@ gboolean refresh_results(gpointer data) {
     //puts("Refreshing results");
     
     //g_list_store_remove_all(window.list_store);
-    GList *n = gtk_container_get_children(GTK_CONTAINER(window.listbox));
-    for(; n; n = n->next){
-        gtk_widget_destroy(GTK_WIDGET(n->data));
-    }
+//     GList *n = gtk_container_get_children(GTK_CONTAINER(window.listbox));
+//     for(; n; n = n->next){
+//         gtk_widget_destroy(GTK_WIDGET(n->data));
+//     }
+   
+    list_box_clear();
     
     scan_state *state = scan_getstate();
     nm_list_foreach(h, state->hosts) {
         //list_add_item(h->data);
-        gtk_container_add(GTK_CONTAINER(window.listbox), list_create_list_row(h->data));
+        //gtk_container_add(GTK_CONTAINER(window.listbox), list_create_list_row(h->data));
+        list_box_add_host(h->data);
     }
 
     show_scan_ended();
@@ -284,7 +299,7 @@ void refresh_hosts() {
 }
 
 
-void refresh_hosts_known() {
+void refresh_hosts_initial() {
     
 
     scan_state *state = scan_getstate();
@@ -299,7 +314,8 @@ void refresh_hosts_known() {
     //g_list_store_remove_all(window.list_store);
     nm_list_foreach(h, state->hosts) {
         //list_add_item(h->data);
-        gtk_container_add(GTK_CONTAINER(window.listbox), list_create_list_row(h->data));
+        //gtk_container_add(GTK_CONTAINER(window.listbox), list_create_list_row(h->data));
+        list_box_add_host(h->data);
     }
 
     show_scan_ended();
@@ -332,7 +348,7 @@ void on_window_destroyed(GtkWidget *widget, gpointer user_data){
     scan_stop();
 }
 
-void on_app_activate(GtkApplication *gtkapp, gpointer user_data){
+void on_app_activate(GtkApplication *gtkapp, gpointer should_run){
     window.gtk_app = gtkapp;
 
     //window.builder = gtk_builder_new_from_file(UI_FILE_BASE NM_APPLICATION_UI_FILE);
@@ -386,9 +402,10 @@ void on_app_activate(GtkApplication *gtkapp, gpointer user_data){
     gtk_widget_show_all (GTK_WIDGET(window.window_widget));
     gtk_widget_hide(window.spinner);
     
-    
-    set_options_from_scan();
-    refresh_hosts_known();
+    if(should_run) {
+        set_options_from_scan();
+        refresh_hosts_initial();
+    }
 }
 
 int init_application(int argc, char **argv){
@@ -413,7 +430,7 @@ int init_application(int argc, char **argv){
 
     GtkApplication *gtk_app = gtk_application_new ("ak.Network_List", G_APPLICATION_FLAGS_NONE);
 
-    g_signal_connect (gtk_app, "activate", G_CALLBACK (on_app_activate), NULL);
+    g_signal_connect (gtk_app, "activate", G_CALLBACK (on_app_activate), (void*)true);
     status = g_application_run (G_APPLICATION (gtk_app), argc, argv);
     
     scan_destroy();

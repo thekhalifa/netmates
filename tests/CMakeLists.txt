@@ -28,6 +28,15 @@ target_include_directories(test_protocol PRIVATE ${SRC})
 target_link_libraries(test_protocol PkgConfig::glib)
 add_test(NAME protocol COMMAND test_protocol)
 
+add_executable(test_scan test_scan.c
+                ${SRC}/nm-scan.c ${SRC}/nm-scan.h
+                ${SRC}/nm-host.c ${SRC}/nm-host.h
+                ${SRC}/nm-protocol.c ${SRC}/nm-protocol.h
+                ${COMMON_FILES})
+target_include_directories(test_scan PRIVATE ${SRC})
+target_link_libraries(test_scan PkgConfig::glib)
+add_test(NAME scan COMMAND test_scan)
+
 
 # Check GTK to test gui
 if (WITH_GUI_TESTS)
