@@ -117,6 +117,7 @@ vendor_db_init() {
             vendor_db_util_add_record(fld_assignment, fld_organisation);
         }
     }
+    fclose(fd);
     qsort(reg_database.reg_records, reg_database.num_records, sizeof(nm_reg_record),
           vendor_db_util_compare_record);
     reg_database.initialised = 1;

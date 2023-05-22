@@ -1,40 +1,29 @@
 set(SRC ${CMAKE_SOURCE_DIR}/src/)
-set(COMMON_FILES    munit.h munit.c
-                    ${SRC}/log.h
-                    ${SRC}/log.c
-                    ${SRC}/nm-common.h
-                    ${SRC}/nm-common.c
-                    ${SRC}/nm-vendordb.h
-                    ${SRC}/nm-vendordb.c)
+add_library(munit munit.h munit.c)
 
-
-add_executable(test_common test_common.c ${SRC}/nm-common.c ${COMMON_FILES})
+add_executable(test_common test_common.c )
 target_include_directories(test_common PRIVATE ${SRC})
-target_link_libraries(test_common PkgConfig::glib)
+target_link_libraries(test_common libnetmates munit)
 add_test(NAME common COMMAND test_common)
 
-add_executable(test_host test_host.c ${SRC}/nm-host.c ${SRC}/nm-host.h ${COMMON_FILES})
+add_executable(test_host test_host.c)
 target_include_directories(test_host PRIVATE ${SRC})
-target_link_libraries(test_host PkgConfig::glib)
+target_link_libraries(test_host libnetmates munit)
 add_test(NAME host COMMAND test_host)
 
-add_executable(test_vendordb test_vendordb.c ${SRC}/nm-vendordb.c ${COMMON_FILES})
+add_executable(test_vendordb test_vendordb.c)
 target_include_directories(test_vendordb PRIVATE ${SRC})
-target_link_libraries(test_vendordb PkgConfig::glib)
+target_link_libraries(test_vendordb libnetmates munit)
 add_test(NAME vendordb COMMAND test_vendordb)
 
-add_executable(test_protocol test_protocol.c ${SRC}/nm-protocol.c ${COMMON_FILES})
+add_executable(test_protocol test_protocol.c)
 target_include_directories(test_protocol PRIVATE ${SRC})
-target_link_libraries(test_protocol PkgConfig::glib)
+target_link_libraries(test_protocol libnetmates munit)
 add_test(NAME protocol COMMAND test_protocol)
 
-add_executable(test_scan test_scan.c
-                ${SRC}/nm-scan.c ${SRC}/nm-scan.h
-                ${SRC}/nm-host.c ${SRC}/nm-host.h
-                ${SRC}/nm-protocol.c ${SRC}/nm-protocol.h
-                ${COMMON_FILES})
+add_executable(test_scan test_scan.c)
 target_include_directories(test_scan PRIVATE ${SRC})
-target_link_libraries(test_scan PkgConfig::glib)
+target_link_libraries(test_scan libnetmates munit)
 add_test(NAME scan COMMAND test_scan)
 
 
@@ -44,11 +33,9 @@ if (WITH_GUI_TESTS)
     if (PKG_CONFIG_FOUND)
         add_executable(test_window test_window.c
                         ${SRC}/nm-appwindow.c ${SRC}/nm-appwindow.h
-                        ${SRC}/nm-host.c ${SRC}/nm-host.h
-                        ${SRC}/nm-protocol.c ${SRC}/nm-protocol.h
-                        ${SRC}/nm-scan.c ${SRC}/nm-scan.h
-                        ${COMMON_FILES} ${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C})
+                        ${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C})
         target_include_directories(test_window PRIVATE ${SRC})
+        target_link_libraries(test_window libnetmates munit)
         target_link_libraries(test_window PkgConfig::gtk)
 
         set_source_files_properties(${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C}

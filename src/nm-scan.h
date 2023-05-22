@@ -34,8 +34,6 @@ enum scan_method{
     SCAN_METHOD_LENGTH,
 };
 
-#define SCAN_PORT_METHOD_BUFFER_LEN 36
-
 static char *scan_method_label[] = {
     "?",
     "tc",
@@ -54,14 +52,15 @@ enum scan_host_state{
 };
 
 typedef struct{
-    int init;
-    int running;
-    int opt_print;
-    int opt_known_first;
-    int opt_known_only;
-    int opt_scan_only;
-    int opt_scan_all;
-    int opt_skip_resolve;
+    bool init;
+    bool running;
+    bool opt_print;
+    bool opt_print_list;
+    bool opt_known_first;
+    bool opt_known_only;
+    bool opt_scan_only;
+    bool opt_scan_all;
+    bool opt_skip_resolve;
     int opt_connect_threads;
     int opt_connect_timeout_ms;
     int opt_listen_threads;
@@ -139,9 +138,10 @@ void            scan_result_destroy(scan_result *result);
 int             scan_list_arp_hosts();
 int             scan_list_gateways();
 bool            scan_list_localhost();
-int             scan_resolve_hostname(char *ip, char *hostname_buffer, size_t buffer_size);
+int             scan_resolve_hostname_new(enum scan_family family, char *ip, char *hostname_buffer, size_t buffer_size);
 //TODO: merge with ipv4 version
-int             scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size);
+//int             scan_resolve_hostname(char *ip, char *hostname_buffer, size_t buffer_size);
+//int             scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size);
 ssize_t         scan_socket_set_saddr(struct sockaddr *saddr, enum scan_family family, 
                                       struct in_addr *inaddr, uint16_t port);
 ssize_t         scan_socket_addr_from_ip(struct sockaddr *saddr, enum scan_family family,

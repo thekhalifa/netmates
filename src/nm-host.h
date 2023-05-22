@@ -48,7 +48,7 @@ static char *nm_host_type_labels[] = {
 
 typedef struct {
     int type;
-    in_addr_t ip_addr;
+    //in_addr_t ip_addr;
     char *ip;
     char *ip6;
     char *netmask;
@@ -58,6 +58,7 @@ typedef struct {
     nmlist *list_ip6;
     nmlist *list_services;
     nmlist *list_ports;
+    nmlist *list_hw_if;
 } nm_host;
 
 
@@ -71,8 +72,8 @@ void        nm_host_add_service(nm_host *host, char *service);
 void        nm_host_add_services(nm_host *host, nmlist *services);
 void        nm_host_add_ports(nm_host *host, nmlist *ports);
 void        nm_host_add_port(nm_host *host, uint16_t port, char *method);
-void        nm_host_print(nm_host *host);
 void        nm_host_print_wide(nm_host *host);
+void        nm_host_print_long(nm_host *host);
 const char *nm_host_label(nm_host *host);
 const char *nm_host_type(nm_host *host);
 /* entry merge functions */

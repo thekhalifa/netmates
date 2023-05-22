@@ -2,55 +2,39 @@
 #include "nm-scan.h"
 
 static proto_query proto_ssdp_queries[] = {
-    {
-        .message = ""
-            "M-SEARCH * HTTP/1.1\r\n"
-            "HOST: 239.255.255.250:1900\r\n"
-            "MAN: \"ssdp:discover\"\r\n"
-            "MX: 1\r\n"
-            "ST: ssdp:all\r\n\r\n"
+    {.message = ""
+        "M-SEARCH * HTTP/1.1\r\n"
+        "HOST: 239.255.255.250:1900\r\n"
+        "MAN: \"ssdp:discover\"\r\n"
+        "MX: 1\r\n"
+        "ST: ssdp:all\r\n\r\n"
     },
-    {
-        .message = ""
-            "M-SEARCH * HTTP/1.1\r\n"
-            "HOST: 239.255.255.250:1900\r\n"
-            "MAN: \"ssdp:discover\"\r\n"
-            "MX: 1\r\n"
-            "ST: urn:dial-multiscreen-org:service:dial:1\r\n\r\n"
+    {.message = ""
+        "M-SEARCH * HTTP/1.1\r\n"
+        "HOST: 239.255.255.250:1900\r\n"
+        "MAN: \"ssdp:discover\"\r\n"
+        "MX: 1\r\n"
+        "ST: urn:dial-multiscreen-org:service:dial:1\r\n\r\n"
     },
     {},
 };
 
 static proto_signature proto_ssdp_signatures[] = {
-    {.signature = "upnp:rootdevice", 
-        .service_name = "upnp", .host_type = HOST_TYPE_UNKNOWN},
-    {.signature = "urn:dial-multiscreen-org:service:dial", 
-        .service_name = "screen", .host_type = HOST_TYPE_TV
-    },
-    {.signature = "urn:mdx-netflix-com:service:target",
-        .service_name = "netflix", .host_type = HOST_TYPE_UNKNOWN},
-    {.signature = "FIRETVSTICK",
-        .service_name = "firetv", .host_type = HOST_TYPE_TV
-    },
-    {.signature = "urn:schemas-upnp-org:device:InternetGatewayDevice",
-        .service_name = "gateway", .host_type = HOST_TYPE_ROUTER},
-    {.signature = "urn:schemas-upnp-org:device:MediaRenderer",
-        .service_name = "media", .host_type = HOST_TYPE_TV
-    },
-    {.signature = "urn:schemas-upnp-org:device:MediaServer",
-        .service_name = "media", .host_type = HOST_TYPE_PC},
-    {.signature = "roku:ecp",
-        .service_name = "roku", .host_type = HOST_TYPE_TV
-    },
-    {.signature = "urn:schemas-upnp-org:device:ZonePlayer",
-        .service_name = "sonos", .host_type = HOST_TYPE_TV
-    },
+    {.signature = "upnp:rootdevice", .service_name = "upnp", .host_type = HOST_TYPE_UNKNOWN},
+    {.signature = "urn:dial-multiscreen-org:service:dial",  .service_name = "screen", .host_type = HOST_TYPE_TV},
+    {.signature = "urn:mdx-netflix-com:service:target", .service_name = "netflix", .host_type = HOST_TYPE_UNKNOWN},
+    {.signature = "FIRETVSTICK", .service_name = "firetv", .host_type = HOST_TYPE_TV},
+    {.signature = "urn:schemas-upnp-org:device:InternetGatewayDevice", .service_name = "gateway", 
+        .host_type = HOST_TYPE_ROUTER},
+    {.signature = "urn:schemas-upnp-org:device:MediaRenderer", .service_name = "media", .host_type = HOST_TYPE_TV},
+    {.signature = "urn:schemas-upnp-org:device:MediaServer", .service_name = "media", .host_type = HOST_TYPE_PC},
+    {.signature = "roku:ecp", .service_name = "roku", .host_type = HOST_TYPE_TV},
+    {.signature = "urn:schemas-upnp-org:device:ZonePlayer", .service_name = "sonos", .host_type = HOST_TYPE_TV},
     {},
 };
 
 
 proto_def proto_ssdp_definition = {
-    //.send_ip = "239.255.255.250", 
     .queries = proto_ssdp_queries,
     .signatures = proto_ssdp_signatures,
 };
@@ -94,14 +78,12 @@ static proto_signature proto_mdns_signatures[] = {
 
 
 proto_def proto_mdns_definition = {
-    //.send_ip = "224.0.0.251", 
     .queries = proto_mdns_queries,
     .signatures = proto_mdns_signatures,
 };
 
 
 static proto_query proto_dns_queries[] = {
-    //{.message = "192.168.1.1"},
     {},
 };
 
@@ -135,7 +117,7 @@ bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
 
     int num_lines = nm_string_count_lines((const char*)in_buffer, in_size);
     if(num_lines < 5){
-        log_debug("probe_ssdp_response - not enough lines to begin checking, skipping");
+        log_trace("probe_ssdp_response - not enough lines to begin checking, skipping");
         return false;
     }
 
@@ -148,7 +130,7 @@ bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
         key_type = key_search_type;
     }
     if(!key_type)
-        return NULL;
+        return false;
     
     if(!nm_list_find_string(result->services, "ssdp"))
         result->services = nm_list_add(result->services, strdup("ssdp"));
@@ -172,7 +154,7 @@ bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
         break;
     }
 
-    return false;
+    return true;
 }
 
 /* convert c-string to dns-string prefixed by length and no . */
@@ -314,7 +296,7 @@ bool probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
     proto_dns_message message;
     memset(&message, 0, sizeof(proto_dns_message));
     
-    //nm_log_trace_bytes("probe_mdns_response", in_buffer, in_size);
+    nm_log_trace_bytes("probe_mdns_response", in_buffer, in_size);
 
     //1. header
     nm_copy_netbytes_to_shorts((uint16_t*)&message.header,
@@ -343,8 +325,7 @@ bool probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
             return false;
     }
 
-    //3. answers
-    //int totalrr = message.header.ancount + message.header.nscount + message.header.arcount;
+    //3. answers. total: ancount + nscount + arcount;
     for (int i = 0; i < message.header.ancount; i++ ) {
         
         retsize = proto_dns_decompile_string(pointer, in_buffer, buffer, sizeof(buffer));

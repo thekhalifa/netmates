@@ -8,7 +8,7 @@
 MunitResult test_blank(MUNIT_ARGS){
     nm_host *entry = nm_host_init(HOST_TYPE_LOCALHOST);
     munit_assert_true(entry->type == HOST_TYPE_LOCALHOST);
-    munit_assert_uint(entry->ip_addr, ==, 0);
+    //munit_assert_uint(entry->ip_addr, ==, 0);
     munit_assert_null(entry->ip);
     munit_assert_null(entry->ip6);
     munit_assert_null(entry->hw_if.addr);
@@ -139,7 +139,7 @@ MunitResult test_full_host(MUNIT_ARGS){
     munit_assert_string_equal(host->list_ip6->data, ip6_2);
 
     puts("");
-    nm_host_print(host);
+    nm_host_print_long(host);
     puts("");
 
     nm_host_destroy(host);

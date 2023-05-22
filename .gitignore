@@ -1,6 +1,6 @@
-/dist/
-/build/
-/_build/
-/.idea/
+build/
+logs/
+.idea/
 .kdev4/
 *.kdev4
+gui/*~

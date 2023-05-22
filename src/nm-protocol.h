@@ -29,7 +29,6 @@ typedef struct {
 } proto_query;
 
 typedef struct proto_def {
-    //char *send_ip;
     proto_query *queries;
     proto_signature *signatures;
 } proto_def;
@@ -59,7 +58,7 @@ typedef struct {
 
 
 typedef struct {
-    //name[];
+    //name;
     uint16_t type;
     uint16_t class;
 } proto_dns_qheader;
@@ -90,7 +89,6 @@ extern proto_def proto_mdns_definition;
 int     probe_string_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
 
 bool    probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
-
 
 int     probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
 int     probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);

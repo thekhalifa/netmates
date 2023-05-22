@@ -23,6 +23,12 @@ void nm_host_destroy(nm_host *host) {
     nm_list_free(host->list_ip, true);
     nm_list_free(host->list_ip6, true);
     nm_list_free(host->list_services, true);
+    nm_list_free(host->list_ports, true);
+    nm_list_foreach(n, host->list_hw_if){
+        free(((hw_details*)n->data)->addr);
+        free(((hw_details*)n->data)->vendor);
+    }
+    nm_list_free(host->list_hw_if, true);
 
     free(host);
 
@@ -56,21 +62,28 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask,
         if(nm_string_len(hw_if.vendor))
             host->hw_if.vendor = strdup(hw_if.vendor);
     }else if(nm_string_len(hw_if.addr)){
-        //replace addr with a longer string
-        char addr[NM_MID_BUFFSIZE];
-        snprintf(addr, NM_MID_BUFFSIZE, "%s, %s", host->hw_if.addr, hw_if.addr);
-        free(host->hw_if.addr);
-        host->hw_if.addr = strdup(addr);
-
-        if(nm_string_len(hw_if.vendor)) {
-            char vendor[NM_MID_BUFFSIZE];
-            snprintf(vendor, NM_MID_BUFFSIZE, "%s%s%s", 
-                    host->hw_if.vendor ? host->hw_if.vendor : "", 
-                    hw_if.vendor ? ", " : "",
-                    hw_if.vendor ? hw_if.vendor : "");
-            free(host->hw_if.vendor);
-            host->hw_if.vendor = strdup(vendor);
-        }
+        hw_details *hwif = malloc(sizeof(hw_details));
+        hwif->addr = strdup(hw_if.addr);
+        if(nm_string_len(hw_if.vendor))
+            hwif->vendor = strdup(hw_if.vendor);
+        host->list_hw_if = nm_list_add(host->list_hw_if, hwif);
+        
+//     }else if(nm_string_len(hw_if.addr)){
+//         //replace addr with a longer string
+//         char addr[NM_MID_BUFFSIZE];
+//         snprintf(addr, NM_MID_BUFFSIZE, "%s, %s", host->hw_if.addr, hw_if.addr);
+//         free(host->hw_if.addr);
+//         host->hw_if.addr = strdup(addr);
+// 
+//         if(nm_string_len(hw_if.vendor)) {
+//             char vendor[NM_MID_BUFFSIZE];
+//             snprintf(vendor, NM_MID_BUFFSIZE, "%s%s%s", 
+//                     host->hw_if.vendor ? host->hw_if.vendor : "", 
+//                     hw_if.vendor ? ", " : "",
+//                     hw_if.vendor ? hw_if.vendor : "");
+//             free(host->hw_if.vendor);
+//             host->hw_if.vendor = strdup(vendor);
+//         }
     }
     
     if(nm_string_len(netmask)){
@@ -149,42 +162,6 @@ void nm_host_add_ports(nm_host *host, nmlist *ports) {
 }
 
 
-void nm_host_print(nm_host *host) {
-    assert(host != NULL);
-    assert(host->ip != NULL || host->ip6 != NULL);
-
-    const char *type = nm_host_type_labels[host->type];
-    if(host->hostname)
-        printf("+ [%s] %s\n", type, host->hostname);
-    else
-        printf("+ [%s]\n", type);
-
-    if(host->ip)
-        printf("   IPv4:  %s\n", host->ip);
-    nm_list_foreach(node, host->list_ip)
-        printf("   IPv4:  %s\n", (char *)node->data);
-
-    if(host->ip6)
-        printf("   IPv6:  %s\n", host->ip6);
-    nm_list_foreach(node, host->list_ip6)
-        printf("   IPv6:  %s\n", (char *)node->data);
-
-    if(host->hw_if.addr){
-        if(host->hw_if.vendor)
-            printf("   MAC:   %s %s\n", host->hw_if.addr, host->hw_if.vendor);
-        else
-            printf("   MAC:   %s\n", host->hw_if.addr);
-    }
-
-    if(host->list_services == NULL)
-        return;
-    printf("   Srvc:  ");
-    nm_list_foreach(node, host->list_services)
-        printf("%s ", (char *)node->data);
-    printf("\n");
-}
-
-
 void nm_host_print_wide(nm_host *host) {
     assert(host != NULL);
     assert(host->ip != NULL || host->ip6 != NULL);
@@ -197,17 +174,22 @@ void nm_host_print_wide(nm_host *host) {
     char *hwaddr = host->hw_if.addr ? host->hw_if.addr : "";
     char *hwvendor = host->hw_if.vendor ? host->hw_if.vendor : "";
     
-    printf("+ %-8s\t%-20s\t%-12s\t%17s\t%s\n",
-           type, ip, hostname, hwaddr, hwvendor);
+    printf("+ %-8s\t%s%-20s%s\t%-20s\t%17s %s%s\n",
+           type, nm_clr_strong, ip, nm_clr_light, hostname, hwaddr, hwvendor, nm_clr_off);
     
+    nm_list_foreach(n, host->list_hw_if){
+        char *hwv = ((hw_details*)n->data)->vendor ? ((hw_details*)n->data)->vendor : "";
+        printf("  %48s\t\t%s%17s %s%s\n", " ", nm_clr_light, ((hw_details*)n->data)->addr, hwv, nm_clr_off);
+    }
+        
     nm_list_foreach(n, host->list_ip)
-        printf("  %-8s\t%-20s\n", " ", (char*)n->data);
+        printf("  %-8s\t%s%-20s%s\n", " ", nm_clr_strong, (char*)n->data, nm_clr_off);
 
     //localhost can have both ip/ip6, print the second one
     if(host->ip && host->ip6)
-        printf("  %-8s\t%-20s\n", " ", host->ip6);
+        printf("  %-8s\t%s%-20s%s\n", " ", nm_clr_strong, host->ip6, nm_clr_off);
     nm_list_foreach(n, host->list_ip6)
-        printf("  %-8s\t%-20s\n", " ", (char*)n->data);
+        printf("  %-8s\t%s%-20s%s\n", " ", nm_clr_strong, (char*)n->data, nm_clr_off);
     
 
     if(host->list_services) {
@@ -225,105 +207,42 @@ void nm_host_print_wide(nm_host *host) {
     }
 }
 
-
-void nm_host_print_wide2(nm_host *host) {
+void nm_host_print_long(nm_host *host) {
     assert(host != NULL);
     assert(host->ip != NULL || host->ip6 != NULL);
 
     const char *type = nm_host_type_labels[host->type];
-    char *hostname = host->hostname ? host->hostname : "";
-    char *ip = host->ip ? host->ip : "";
-    char *ip6 = host->ip6 ? host->ip6 : "";
-    char *hwaddr = host->hw_if.addr ? host->hw_if.addr : "";
-    char *hwvendor = host->hw_if.vendor ? host->hw_if.vendor : "";
-    
-    printf("+ %-8s-> %-15s\t%-22s\t%-12s\t%17s\t%s\n",
-           type, ip, ip6, hostname, hwaddr, hwvendor);
-    
-    nmlist *ipnode = host->list_ip;
-    nmlist *ip6node = host->list_ip6;
-    while(ipnode || ip6node) {
-        ip = ipnode ? ipnode->data : "";
-        ip6 = ip6node ? ip6node->data : "";
-        
-        printf("             %-15s\t%s-22\n", ip, ip6);
-        ipnode = ipnode ? ipnode->next : NULL;
-        ip6node = ip6node ? ip6node->next : NULL;
-    }
-
-    if(host->list_services) {
-        printf("             [");
-        nm_list_foreach(node, host->list_services)
-            printf("%s%s", (char *)node->data, node->next ? ", " : "");
-        printf("]\n");
-    }
-
-    if(host->list_ports) {
-        printf("             [");
-        nm_list_foreach(node, host->list_ports)
-            printf("%s%s", (char *)node->data, node->next ? ", " : "");
-        printf("]\n");
-    }
-}
-
-
-void nm_host_print2(nm_host *host) {
-    assert(host != NULL);
-    assert(host->ip != NULL || host->ip6 != NULL);
-
-    const char *type = nm_host_type_labels[host->type];
-    if(host->ip != NULL)
-        printf("+ Type: %-10s IPv4: [%s] \thostname: [%s]", type, host->ip, host->hostname);
-    else
-        printf("+ Type: %-10s IPv6: [%s] \thostname: [%s]", type, host->ip6, host->hostname);
-
-    if(host->type == HOST_TYPE_LOCALHOST)
-        printf(", Netmask: %s", host->netmask);
-    if(host->ip != NULL && host->ip6 != NULL)
-        printf(", IPv6: %s", host->ip6);
-    printf("\n");
-
-    char *other_label[] = {"Other IP", "Other IPv6", "Services"};
-    nmlist *other_list[] = {host->list_ip, host->list_ip6, host->list_services};
-    
-    int items = sizeof(other_label) / sizeof(other_label[0]);
-    for(int j=0; j<items; j++){
-        if(other_list[j] == NULL || other_list[j]->data == NULL)
-            continue;
-        
-        printf("\t\t--%s: \t", other_label[j]);
-        nm_list_foreach(node, other_list[j]) {
-            printf("%s%s", (char *)node->data, node->next ? ", ": "\n");
-        }
-    }
-}
-
-void nm_host_print3(nm_host *host) {
-    assert(host != NULL);
-    assert(host->ip != NULL || host->ip6 != NULL);
-
-    const char *type = nm_host_type_labels[host->type];
-    if(host->hostname)
-        printf("+ [%s] %s\n", type, host->hostname);
-    else
-        printf("+ [%s]\n", type);
-    
-    if(host->type == HOST_TYPE_LOCALHOST)
-        printf("   Mask: %s\n", host->netmask);
+    printf("+ [%s] %s\n", type, host->hostname ? host->hostname : "");
 
     if(host->ip)
-        printf("   ip4:  %s\n", host->ip);
+        printf("  inet:  %s\n", host->ip);
     nm_list_foreach(node, host->list_ip)
-        printf("   ip4:  %s\n", (char *)node->data);
+        printf("  inet:  %s\n", (char *)node->data);
 
     if(host->ip6)
-        printf("   ip6:  %s\n", host->ip6);
+        printf("  inet6:  %s\n", host->ip6);
     nm_list_foreach(node, host->list_ip6)
-        printf("   ip6:  %s\n", (char *)node->data);
+        printf("  inet6:  %s\n", (char *)node->data);
 
-    nm_list_foreach(node, host->list_services)
-        printf("   Service:  %s\n", (char *)node->data);
+    if(host->hw_if.addr){
+        if(host->hw_if.vendor)
+            printf("  link:   %s %s\n", host->hw_if.addr, host->hw_if.vendor);
+        else
+            printf("  link:   %s\n", host->hw_if.addr);
+    }
 
+    if(host->list_services){
+        printf("  services:  ");
+        nm_list_foreach(node, host->list_services)
+            printf("%s%s", (char *)node->data, node->next ? ", " : "");
+        printf("\n");
+    }
+    if(host->list_ports){
+        printf("  ports:  ");
+        nm_list_foreach(node, host->list_ports)
+            printf("%s%s", (char *)node->data, node->next ? ", " : "");
+        printf("\n");
+    }
 }
 
 

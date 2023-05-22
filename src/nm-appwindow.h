@@ -1,9 +1,6 @@
 #ifndef NETWORK_MATES_NM_WINDOW_H
 #define NETWORK_MATES_NM_WINDOW_H
 
-#include <glib-2.0/glib.h>
-//#include <glib.h>
-//#include <gtk/gtk.h>
 #include <gtk-3.0/gtk/gtk.h>
 
 #include "nm-common.h"
@@ -14,6 +11,7 @@
 #define NM_APPLICATION_CSS_FILE "gui/nm-style.css"
 #define NM_RESOURCE_BASE "/ws/khalifa/network-mates/"
 #define NM_APPLICATION_ICON "network-wireless"
+#define NM_GUI_APP_NAME "ak.Network_List"
 
 struct icon_def {
     char *icon;
@@ -37,11 +35,9 @@ typedef struct {
 } nm_window;
 
 
-//void list_add_item(nm_host *entry);
 void list_box_add_host(nm_host *host);
 void list_box_clear();
 
-void on_refresh_clicked(GtkWidget *widget, gpointer user_data);
 void on_app_activate(GtkApplication *gtkapp, gpointer should_run);
 
 int init_application(int argc, char **argv);

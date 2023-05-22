@@ -8,7 +8,7 @@
 #include "nm-common.h"
 
 
-#define NL_VDB_CAP_SEGMENT 500
+#define NL_VDB_CAP_SEGMENT 1024
 #define NL_VDB_PATH "/var/lib/ieee-data/oui.csv"
 #define NL_VDB_PATH2 "/usr/share/ieee-data/oui.csv"
 #define NL_VDB_MAX_LINES 100000
