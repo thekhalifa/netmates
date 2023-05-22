@@ -1,4 +1,6 @@
+dist/
 build/
+buildrelease/
 logs/
 .idea/
 .kdev4/

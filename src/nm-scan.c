@@ -700,7 +700,7 @@ int probe_sendrecv_udp(const char *thread_id, scan_result *result,
 bool scan_response_ack(scan_result *result, const uint8_t *in_buffer, ssize_t in_size) {
     result->response = SCAN_HSTATE_LIVE;
     if(result->port_def) {
-        result->services = nm_list_add(result->services, result->port_def->service);
+        result->services = nm_list_add(result->services, strdup(result->port_def->service));
     }
     return true;
 }
@@ -982,6 +982,7 @@ void scan_listen_thread(gpointer target_data, gpointer results_data) {
         result->port = port_def->port;
         result->method = port_def->method;
         result->family = port_def->family;
+        result->port_def = port_def;
         if(port_def->family == SCAN_FAMILY_INET6)
             result->target.inaddr6 = recvaddr.sin6_addr;
         else

@@ -3,27 +3,27 @@ add_library(munit munit.h munit.c)
 
 add_executable(test_common test_common.c )
 target_include_directories(test_common PRIVATE ${SRC})
-target_link_libraries(test_common libnetmates munit)
+target_link_libraries(test_common netmates-core munit)
 add_test(NAME common COMMAND test_common)
 
 add_executable(test_host test_host.c)
 target_include_directories(test_host PRIVATE ${SRC})
-target_link_libraries(test_host libnetmates munit)
+target_link_libraries(test_host netmates-core munit)
 add_test(NAME host COMMAND test_host)
 
 add_executable(test_vendordb test_vendordb.c)
 target_include_directories(test_vendordb PRIVATE ${SRC})
-target_link_libraries(test_vendordb libnetmates munit)
+target_link_libraries(test_vendordb netmates-core munit)
 add_test(NAME vendordb COMMAND test_vendordb)
 
 add_executable(test_protocol test_protocol.c)
 target_include_directories(test_protocol PRIVATE ${SRC})
-target_link_libraries(test_protocol libnetmates munit)
+target_link_libraries(test_protocol netmates-core munit)
 add_test(NAME protocol COMMAND test_protocol)
 
 add_executable(test_scan test_scan.c)
 target_include_directories(test_scan PRIVATE ${SRC})
-target_link_libraries(test_scan libnetmates munit)
+target_link_libraries(test_scan netmates-core munit)
 add_test(NAME scan COMMAND test_scan)
 
 
@@ -35,7 +35,7 @@ if (WITH_GUI_TESTS)
                         ${SRC}/nm-appwindow.c ${SRC}/nm-appwindow.h
                         ${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C})
         target_include_directories(test_window PRIVATE ${SRC})
-        target_link_libraries(test_window libnetmates munit)
+        target_link_libraries(test_window netmates-core munit)
         target_link_libraries(test_window PkgConfig::gtk)
 
         set_source_files_properties(${CMAKE_BINARY_DIR}/${NM_GRESOURCE_C}

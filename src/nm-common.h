@@ -72,5 +72,6 @@ void        nm_log_trace_buffer(const char *sign, const void *buffer, int len);
 void        nm_log_trace_bytes(const char *sign, const uint8_t *data, int len);
 void        nm_log_set_lock(bool state, void *data);
 void        nm_enable_colour();
+char       *nm_path_string(const char *inpath, char *fullpath);
 
 #endif //NETWORK_MATES_NM_COMMON_H

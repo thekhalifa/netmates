@@ -9,8 +9,9 @@
 
 
 #define NL_VDB_CAP_SEGMENT 1024
-#define NL_VDB_PATH "/var/lib/ieee-data/oui.csv"
-#define NL_VDB_PATH2 "/usr/share/ieee-data/oui.csv"
+#define NL_VDB_PATH1 "~/.config/ieee-oui.csv"
+#define NL_VDB_PATH2 "/var/lib/ieee-data/oui.csv"
+#define NL_VDB_PATH3 "/usr/share/ieee-data/oui.csv"
 #define NL_VDB_MAX_LINES 100000
 #define NL_VDB_MAX_ERRORS 100
 

@@ -19,7 +19,7 @@ struct {
     int arg_scan_timeout;
     int arg_subnet_offset;
 }  nm_app = {
-    .log_level = LOG_TRACE,          /* default: LOG_WARN */
+    .log_level = LOG_WARN,          /* default: LOG_WARN */
     .arg_known_only = false,
     .arg_known_first = false,
     .arg_skip_resolve = false,
@@ -196,9 +196,6 @@ int init_application(int argc, char **argv){
 }
 
 int main (int argc, char **argv){
-    sleep(5);
-    init_application(argc, argv);
-    sleep(5);
-    //return init_application(argc, argv);
+    return init_application(argc, argv);
 
 }

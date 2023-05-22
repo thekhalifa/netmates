@@ -6,13 +6,14 @@ static nm_window window = {
         .icons[HOST_TYPE_ROUTER] =      {"modem","router or gateway device"},
         .icons[HOST_TYPE_PHONE] =       {"phone","smart phone"},
         .icons[HOST_TYPE_PRINTER] =     {"printer","printer or print sharing device"},
-        .icons[HOST_TYPE_DEVICE] =      {"cpu","smart device"},
+        //.icons[HOST_TYPE_DEVICE] =      {"cpu","smart device"},
+        .icons[HOST_TYPE_DEVICE] =      {"uninterruptible-power-supply","smart device"},
         .icons[HOST_TYPE_TV] =          {"tv","smart TV or streaming device"},
         .icons[HOST_TYPE_PC] =          {"computer","PC or server"},
         .icons[HOST_TYPE_PC_MAC] =      {"computer","Mac computer"},
         .icons[HOST_TYPE_PC_WIN] =      {"computer","Windows computer"},
         .icons[HOST_TYPE_ANY] =         {"computer","Other device"},
-        .icons[HOST_TYPE_KNOWN] =       {"network-wired","Previously seen device, but not scanned"},
+        .icons[HOST_TYPE_KNOWN] =       {"network-wired","Previously seen device, not response"},
 };
 
 
@@ -42,6 +43,13 @@ static char * create_title_label(nm_host *host){
         position += sprintf(buffer + position, hw_format, host->hw_if.addr);
     if(host->hw_if.vendor)
         position += sprintf(buffer + position, hwv_format, host->hw_if.vendor);
+    nm_list_foreach(n, host->list_hw_if){
+        hw_details *hwif = n->data;
+        position += sprintf(buffer + position, ipv4_format, hwif->addr);
+        if(hwif->vendor)
+            position += sprintf(buffer + position, hwv_format, hwif->vendor);
+        
+    }
 
     return g_strdup(buffer);
 }
@@ -163,7 +171,7 @@ static GtkWidget *list_create_list_row(nm_host *host){
     gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(flow_box), GTK_SELECTION_NONE);
     gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(flow_box), 2);
     gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(flow_box), 2);
-    gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(flow_box), TRUE);
+    gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(flow_box), FALSE);
     gtk_orientable_set_orientation(GTK_ORIENTABLE(flow_box), GTK_ORIENTATION_VERTICAL);
     create_services_tags(flow_box, host);
 
@@ -340,7 +348,7 @@ int init_application(int argc, char **argv){
     state->opt_skip_resolve = false;
     state->opt_scan_only = false;
     state->opt_scan_all = 0;
-    state->opt_scan_timeout_ms = 2000;         /* default: 15000 */
+    state->opt_scan_timeout_ms = 15000;         /* default: 15000 */
     state->opt_connect_threads = 255;           /* default: 255 */
     state->opt_connect_timeout_ms = 200;        /* default: 200 */
     state->opt_listen_threads = 12;             /* default: 12 */

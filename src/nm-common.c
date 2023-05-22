@@ -1,9 +1,9 @@
 #include "nm-common.h"
 
 
-#define COLOUR_TITLE "\e[1m\e[32m"
-#define COLOUR_STRONG "\e[1m\e[34m"
-#define COLOUR_LIGHT "\e[0;30m"
+#define COLOUR_TITLE "\e[0m\e[1m\e[32m"
+#define COLOUR_STRONG "\e[0m\e[1m\e[34m"
+#define COLOUR_LIGHT "\e[0m\e[36m"
 #define COLOUR_OFF  "\e[0m"
 
 char * nm_clr_title = "";
@@ -295,4 +295,18 @@ void nm_log_set_lock(bool state, void *data){
         g_mutex_lock(&nm_log_lock);
     else
         g_mutex_unlock(&nm_log_lock);
+}
+
+char *nm_path_string(const char *inpath, char *fullpath) {
+    
+    const char *from = inpath;
+    char *pointer = fullpath;
+    if(strchr(from, '~') == inpath) {
+        char *homedir = getenv("HOME");
+        pointer = stpcpy(pointer, homedir);
+        from = inpath + 1;
+    }
+    
+    strcpy(pointer, from);
+    return fullpath;
 }

@@ -84,19 +84,27 @@ vendor_db_init() {
 
     if(reg_database.initialised)
         return 0;
+    
+    FILE *fd;
+    char filename[NM_GEN_BUFFSIZE];
 
-    FILE *fd = fopen(NL_VDB_PATH, "r");
-    if(fd == NULL){
-        //try the second path
-        fd = fopen(NL_VDB_PATH2, "r");
-        if(fd == NULL) {
-            return 1;
-        }
+    //try the 3 available paths
+    fd = fopen(nm_path_string(NL_VDB_PATH1, filename), "r");
+    if(!fd){
+        fd = fopen(nm_path_string(NL_VDB_PATH2, filename), "r");
+        if(!fd)
+            fd = fopen(nm_path_string(NL_VDB_PATH3, filename), "r");
     }
+    
+    if(!fd) {
+        log_info("No Vendor db file");
+        return 1;
+    }
+
+    log_debug("Vendor db file: %s", filename);
 
     int num_read = 0;
     char line[BUFSIZ], *fld_assignment, *fld_organisation;
-    nm_reg_record *record;
 
     //check header line
     if(fgets(line, sizeof(line), fd)){

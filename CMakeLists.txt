@@ -13,15 +13,15 @@ set(WITH_GUI_TESTS YES)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
 
-add_library(libnetmates src/nm-common.h src/nm-common.c
+add_library(netmates-core STATIC src/nm-common.h src/nm-common.c
                 src/nm-host.h src/nm-host.c src/nm-scan.h src/nm-scan.c
                 src/nm-protocol.h src/nm-protocol.c src/nm-vendordb.h src/nm-vendordb.c
                 src/log.h src/log.c)
-target_link_libraries(libnetmates PkgConfig::glib)
+target_link_libraries(netmates-core PkgConfig::glib)
 
 
 add_executable(netmates src/nm-app.c)
-target_link_libraries(netmates libnetmates)
+target_link_libraries(netmates netmates-core)
 
 install(TARGETS netmates RUNTIME)
 install(FILES "doc/netmates.1" DESTINATION "share/man/man1"
@@ -47,7 +47,7 @@ if (PKG_CONFIG_FOUND)
     add_executable(netmates-gui src/nm-appgui.c
                     src/nm-appwindow.h src/nm-appwindow.c
                     ${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C})
-    target_link_libraries(netmates-gui libnetmates)
+    target_link_libraries(netmates-gui netmates-core)
     target_include_directories(netmates-gui PRIVATE src/)
     set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${NM_GRESOURCE_C}
             PROPERTIES GENERATED TRUE)
@@ -92,8 +92,8 @@ set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
 #set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${PROJECT_HOMEPAGE_URL})
 ## Redhat package
 set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
-set(CPACK_RPM_PACKAGE_LICENSE GPL3)
-set(CPACK_RPM_PACKAGE_REQUIRES "libc6 >= 2.17, libglib2.0-0 >= 2.31, libgtk-3-0 >= 3.16")
+set(CPACK_RPM_PACKAGE_LICENSE GPLv3)
+#set(CPACK_RPM_PACKAGE_REQUIRES "libc6 >= 2.17, glib2 >= 2.31, gtk3 >= 3.16")
 set(CPACK_RPM_PACKAGE_DESCRIPTION ${PROJECT_DESCRIPTION_LONG})
 #set(CPACK_RPM_PACKAGE_GROUP network)
 #set(CPACK_RPM_PACKAGE_VENDOR ${PROJECT_AUTHOR})

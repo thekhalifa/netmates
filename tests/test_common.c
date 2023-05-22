@@ -299,6 +299,30 @@ MunitResult test_log_trace_bytes(MUNIT_ARGS){
 }
 
 
+MunitResult test_path_string(MUNIT_ARGS){
+    
+    char pathbuff[512];
+    setenv("HOME", "/home/testuser12", 1);
+
+    munit_assert_ptr_equal(nm_path_string("/home/user/dir1", pathbuff), pathbuff);
+    munit_assert_string_equal(pathbuff, "/home/user/dir1");
+    
+    munit_assert_ptr_equal(nm_path_string("/home/user/dir1/and file name /something - with hyphen", pathbuff), pathbuff);
+    munit_assert_string_equal(pathbuff, "/home/user/dir1/and file name /something - with hyphen");
+
+    munit_assert_ptr_equal(nm_path_string("~/dir2", pathbuff), pathbuff);
+    munit_assert_string_equal(pathbuff, "/home/testuser12/dir2");
+    
+    munit_assert_ptr_equal(nm_path_string("~/dir1/and file name /something - with hyphen", pathbuff), pathbuff);
+    munit_assert_string_equal(pathbuff, "/home/testuser12/dir1/and file name /something - with hyphen");
+
+    munit_assert_ptr_equal(nm_path_string("/dir2~notattheend~", pathbuff), pathbuff);
+    munit_assert_string_equal(pathbuff, "/dir2~notattheend~");
+
+    return MUNIT_OK;
+}
+
+
 /*
 
 MunitTest tests[] = {
@@ -329,6 +353,8 @@ MUNIT_TESTS(tests,
     MUNIT_TEST("list_all", test_list_all)
     MUNIT_TEST("util_hw_address", test_util_hw_address)
     MUNIT_TEST("log_trace_bytes", test_log_trace_bytes)
+    MUNIT_TEST("path_string", test_path_string)
+
 );
 
 MUNIT_SUITE(suite, "/common/", tests);
