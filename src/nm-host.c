@@ -63,6 +63,7 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask,
             host->hw_if.vendor = strdup(hw_if.vendor);
     }else if(nm_string_len(hw_if.addr)){
         hw_details *hwif = malloc(sizeof(hw_details));
+        memset(hwif, 0, sizeof(hw_details));
         hwif->addr = strdup(hw_if.addr);
         if(nm_string_len(hw_if.vendor))
             hwif->vendor = strdup(hw_if.vendor);
@@ -94,37 +95,6 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask,
     }
 }
 
-nmlist *nm_host_merge_in_list(nmlist *list, nm_host *newhost) {
-    // match against the list
-    nm_host *host, *foundhost = NULL;
-    nm_list_foreach(node, list) {
-        host = node->data;
-        
-        if (newhost->ip && host->ip && 
-            (!strcmp(newhost->ip, host->ip) || nm_list_find_string(host->list_ip, newhost->ip))) {
-            foundhost = host;
-            break;
-        }
-        if (newhost->ip6 && host->ip6 && 
-            (!strcmp(newhost->ip6, host->ip6) || nm_list_find_string(host->list_ip6, newhost->ip6))) {
-            foundhost = host;
-            break;
-        }
-        if (newhost->hw_if.addr && host->hw_if.addr && (!strcmp(newhost->hw_if.addr, host->hw_if.addr))) {
-            foundhost = host;
-            break;
-        }
-    }
-    
-    if(foundhost){
-        nm_host_merge(foundhost, newhost);
-        nm_host_destroy(newhost);
-        return list;
-    }
-    // no match, add in list
-    return nm_list_add(list, newhost);
-}
-
 
 void nm_host_add_service(nm_host *host, char *service) {
     assert(host != NULL);
@@ -144,11 +114,13 @@ void nm_host_add_services(nm_host *host, nmlist *services) {
 
 void nm_host_add_port(nm_host *host, uint16_t port, char *method) {
     assert(host != NULL);
-    assert(port != 0);
-    assert(method != 0);
+    assert(method != NULL);
     
     char buffer[NM_GEN_BUFFSIZE];
-    sprintf(buffer, "%hu/%s", port, method);
+    if(port)
+        sprintf(buffer, "%hu/%s", port, method);
+    else
+        sprintf(buffer, "%s", method);
     if(!nm_list_find_string(host->list_ports, buffer))
         host->list_ports = nm_list_add(host->list_ports, strdup(buffer));
 
@@ -212,37 +184,38 @@ void nm_host_print_long(nm_host *host) {
     assert(host->ip != NULL || host->ip6 != NULL);
 
     const char *type = nm_host_type_labels[host->type];
-    printf("+ [%s] %s\n", type, host->hostname ? host->hostname : "");
+    printf("+ [%s]\t  %s\n", type, host->hostname ? host->hostname : "");
 
     if(host->ip)
-        printf("  inet:  %s\n", host->ip);
+        printf("  inet:     %s\n", host->ip);
     nm_list_foreach(node, host->list_ip)
-        printf("  inet:  %s\n", (char *)node->data);
+        printf("  inet:     %s\n", (char *)node->data);
 
     if(host->ip6)
-        printf("  inet6:  %s\n", host->ip6);
+        printf("  inet6:    %s\n", host->ip6);
     nm_list_foreach(node, host->list_ip6)
-        printf("  inet6:  %s\n", (char *)node->data);
+        printf("  inet6:    %s\n", (char *)node->data);
 
     if(host->hw_if.addr){
         if(host->hw_if.vendor)
-            printf("  link:   %s %s\n", host->hw_if.addr, host->hw_if.vendor);
+            printf("  link:     %s %s\n", host->hw_if.addr, host->hw_if.vendor);
         else
-            printf("  link:   %s\n", host->hw_if.addr);
+            printf("  link:     %s\n", host->hw_if.addr);
     }
 
     if(host->list_services){
-        printf("  services:  ");
+        printf("  services: ");
         nm_list_foreach(node, host->list_services)
             printf("%s%s", (char *)node->data, node->next ? ", " : "");
         printf("\n");
     }
     if(host->list_ports){
-        printf("  ports:  ");
+        printf("  ports:    ");
         nm_list_foreach(node, host->list_ports)
             printf("%s%s", (char *)node->data, node->next ? ", " : "");
         printf("\n");
     }
+    printf("\n");
 }
 
 
@@ -344,6 +317,38 @@ void nm_host_merge(nm_host *dst, nm_host *src){
     
 }
 
+
+nmlist *nm_host_merge_in_list(nmlist *list, nm_host *newhost) {
+    // match against the list
+    nm_host *host, *foundhost = NULL;
+    nm_list_foreach(node, list) {
+        host = node->data;
+        
+        if (newhost->ip && host->ip && 
+            (!strcmp(newhost->ip, host->ip) || nm_list_find_string(host->list_ip, newhost->ip))) {
+            foundhost = host;
+            break;
+        }
+        if (newhost->ip6 && host->ip6 && 
+            (!strcmp(newhost->ip6, host->ip6) || nm_list_find_string(host->list_ip6, newhost->ip6))) {
+            foundhost = host;
+            break;
+        }
+        if (newhost->hw_if.addr && host->hw_if.addr && (!strcmp(newhost->hw_if.addr, host->hw_if.addr))) {
+            foundhost = host;
+            break;
+        }
+    }
+    
+    if(foundhost){
+        nm_host_merge(foundhost, newhost);
+        nm_host_destroy(newhost);
+        return list;
+    }
+    // no match, add in list
+    return nm_list_add(list, newhost);
+}
+
 static int nm_host_sort_compare(const void *data1, const void *data2){
     
     const nm_host *left = data1;
@@ -377,5 +382,6 @@ nmlist *nm_host_sort_list(nmlist *list) {
     
     nmlist *sorted = g_list_sort(list, nm_host_sort_compare);
     return sorted;
-    
 }
+
+

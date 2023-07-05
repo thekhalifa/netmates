@@ -5,6 +5,8 @@
 #include <asm-generic/errno.h>
 #include <ifaddrs.h>
 #include <linux/if_packet.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>

@@ -126,6 +126,14 @@ static const scan_port scan_listen_list[] = {
 };
 
 
+
+struct scan_nlrt_request {
+    struct nlmsghdr header;
+    struct ndmsg neigh;
+};
+
+
+
 bool scan_util_is_running(){
     bool ret = false;
     g_mutex_lock(&scan_run_lock);
@@ -480,7 +488,7 @@ ssize_t scan_socket_set_saddr(struct sockaddr *saddr, enum scan_family family, s
     
     if(family == SCAN_FAMILY_INET6) {
         struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)saddr;
-        memcpy(&saddr6->sin6_addr, inaddr, sizeof(struct in6_addr));
+        memcpy(&saddr6->sin6_addr, ((struct sockaddr_in6 *)inaddr), sizeof(struct in6_addr));
         saddr6->sin6_port = htons(port);
         return sizeof(struct sockaddr_in6);
     }
@@ -1315,7 +1323,7 @@ int scan_list_arp_hosts(){
         memset(hw_addr, 0, sizeof(hw_addr));
         memset(hw_vendor, 0, sizeof(hw_vendor));
 
-        num_tokens = sscanf(line, "%s 0x%x 0x%x %99s %*99s* %*99s\n", ip_buffer, &type, &flags, hw_addr);
+        num_tokens = sscanf(line, "%s 0x%x 0x%x %17s %*99s* %*99s\n", ip_buffer, &type, &flags, hw_addr);
         if (num_tokens < 4)
             break;
         //line
@@ -1338,6 +1346,7 @@ int scan_list_arp_hosts(){
         else
             nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_if, NULL);
 
+        nm_host_add_port(entry, 0, "arpcache");
         scan.hosts = nm_host_merge_in_list(scan.hosts, entry);
         num_found++;
     }
@@ -1358,7 +1367,7 @@ int scan_list_gateways() {
     char host_buffer[NM_HOST_STRLEN];
     char iface[64], *token;
     FILE *fp;
-    nm_host *gw_host = NULL, *gw_host6;
+    nm_host *gw_host, *gw_host6;
     struct in_addr dest, gateway;
     struct in6_addr gateway6;
 
@@ -1383,6 +1392,7 @@ int scan_list_gateways() {
                 else
                     nm_host_set_attributes(gw_host, ip, NULL, NULL, HW_IFACE_NULL, NULL);
 
+                nm_host_add_port(gw_host, 0, "route");
                 scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host);
                 num_ip4_found++;
             }
@@ -1418,6 +1428,7 @@ int scan_list_gateways() {
             else
                 nm_host_set_attributes(gw_host6, NULL, ip6, NULL, HW_IFACE_NULL, NULL);
 
+            nm_host_add_port(gw_host6, 0, "route6");
             scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host6);
 
             num_ip6_found++;
@@ -1427,6 +1438,146 @@ int scan_list_gateways() {
 
     log_trace("scan_list_gateways: ending with ip4: %i, ip6: %i", num_ip4_found, num_ip6_found);
     return num_ip4_found + num_ip6_found;
+}
+
+
+int scan_list_neighbours(){
+    log_trace("scan_list_neighbours: called");
+
+    char recvbuff[1024*64];
+    struct msghdr recv_hdr;
+    struct iovec iodata;
+    unsigned int nmseq = 0xFF1234;
+    struct scan_nlrt_request rtrequest;
+    struct nlmsghdr *nh;
+    struct ndmsg *recvdata;
+    struct rtattr *rta;
+    
+    nm_host *entry;
+    enum scan_family family;
+    char ip_buffer[INET6_ADDRSTRLEN];
+    char host_buffer[NM_HOST_STRLEN];
+    char hw_addr[NM_HWADDR_STRLEN];
+    char hw_vendor[NM_SMALL_BUFFSIZE];
+    hw_details hw_if;
+    hw_if.addr = hw_addr;
+    hw_if.vendor = hw_vendor;
+    int num_found = 0;
+
+    
+    int sd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    if(sd == -1){
+        log_warn("Neighbours: netlink socket errno: %i, errdesc: %s", errno, strerror(errno));
+        return 0;
+    }
+
+    memset(&rtrequest, 0, sizeof(rtrequest));
+    rtrequest.header.nlmsg_len = NLMSG_LENGTH(sizeof(struct ndmsg));
+    rtrequest.header.nlmsg_type = RTM_GETNEIGH;
+    rtrequest.header.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+    rtrequest.header.nlmsg_seq = nmseq;
+
+    int sendret = sendto(sd, &rtrequest, sizeof(rtrequest), 0, 0, 0);
+    if(sendret <= 0){
+        log_warn("Neighbours: netlink send errno: %i, errdesc: %s", errno, strerror(errno));
+        close(sd);
+        return 0;
+    }
+    
+    memset(&recv_hdr, 0, sizeof(struct msghdr));
+    memset(&iodata, 0, sizeof(struct iovec));
+    iodata.iov_base = &recvbuff;
+    iodata.iov_len = sizeof(recvbuff);
+    recv_hdr.msg_iov = &iodata;
+    recv_hdr.msg_iovlen = 1;
+
+    int recvret = recvmsg(sd, &recv_hdr, MSG_WAITALL);
+    if(recvret <= 0){
+        log_warn("Neighbours: netlink recv errno: %i, errdesc: %s", errno, strerror(errno));
+        close(sd);
+        return 0;
+    }
+    
+    
+    struct rtattr *attr;
+    ssize_t ndsize, attrsize, attrvalsize;
+    
+    for(nh = (struct nlmsghdr *)recvbuff; NLMSG_OK(nh, recvret); nh = NLMSG_NEXT(nh, recvret)) {
+        
+        if(nh->nlmsg_seq != nmseq) {
+            log_error("Neighbours: received wrong data, won't try again, refresh.");
+            break;
+        }
+        if(nh->nlmsg_type == NLMSG_DONE || nh->nlmsg_type == NLMSG_ERROR)
+            break;
+        if(nh->nlmsg_type != RTM_NEWNEIGH)
+            continue;
+        
+        recvdata = NLMSG_DATA(nh);
+        if(recvdata->ndm_type != RTN_UNICAST)
+            continue;
+            
+        memset(ip_buffer, 0, sizeof(ip_buffer));
+        memset(host_buffer, 0, sizeof(host_buffer));
+        memset(hw_addr, 0, sizeof(hw_addr));
+        memset(hw_vendor, 0, sizeof(hw_vendor));
+        
+        ndsize = NLMSG_PAYLOAD(nh, 0);
+        attrsize = ndsize - sizeof(recvdata);
+        rta = ((struct rtattr *)(((char *)(recvdata)) + NLMSG_ALIGN(sizeof(struct ndmsg))));
+        for (; RTA_OK (rta, attrsize); rta = RTA_NEXT(rta, attrsize)) {
+                
+            if(rta->rta_type != NDA_DST && rta->rta_type != NDA_LLADDR)
+                continue;
+                
+            attrvalsize = RTA_PAYLOAD(rta);
+            if(rta->rta_type == NDA_DST) {
+                if(recvdata->ndm_family == AF_INET6 && attrvalsize == sizeof(struct in6_addr)) {
+                    family = SCAN_FAMILY_INET6;
+                    inet_ntop(AF_INET6, RTA_DATA(rta), ip_buffer, sizeof(ip_buffer));
+                    if(!scan.opt_skip_resolve)
+                        scan_resolve_hostname_new(SCAN_FAMILY_INET6, ip_buffer, host_buffer, sizeof(host_buffer));
+                }else if(recvdata->ndm_family == AF_INET && attrvalsize == sizeof(struct in_addr)) {
+                    family = SCAN_FAMILY_INET4;
+                    inet_ntop(AF_INET, RTA_DATA(rta), ip_buffer, sizeof(ip_buffer));
+                    if(!scan.opt_skip_resolve)
+                        scan_resolve_hostname_new(SCAN_FAMILY_INET4, ip_buffer, host_buffer, sizeof(host_buffer));
+                }
+            }else if(rta->rta_type == NDA_LLADDR && attrvalsize == 6) {
+                nm_format_hw_address_direct(hw_addr, RTA_DATA(rta));
+            }
+        }
+        
+        if(!strlen(ip_buffer) || !nm_validate_hw_address(hw_addr, true)){
+            log_trace("scan_list_neighbours: skipping host with possible invalid ip/hw");
+            continue;
+        }
+
+        if(!scan.opt_skip_resolve) {
+            nm_update_hw_vendor(hw_vendor, sizeof(hw_vendor), hw_addr);
+            if(strlen(hw_vendor))
+                hw_if.vendor = hw_vendor;
+            else
+                hw_if.vendor = NULL;
+        }
+        
+        entry = nm_host_init(HOST_TYPE_KNOWN);
+        if (family == SCAN_FAMILY_INET6)
+            nm_host_set_attributes(entry, NULL, ip_buffer, NULL, hw_if, host_buffer);
+        else
+            nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_if, host_buffer);
+        nm_host_add_port(entry, 0, "neighbour");
+        //nm_host_add_service(entry, "NEIGHBOR");
+
+        scan.hosts = nm_host_merge_in_list(scan.hosts, entry);
+        num_found++;
+            
+    }
+
+    close(sd);
+    
+    log_trace("scan_list_neighbours: ending");
+    return num_found;
 }
 
 bool scan_list_localhost() {
@@ -1527,6 +1678,8 @@ void scan_start() {
         log_error("Could not resolve localhost address details");
     
     if(!scan.opt_scan_only){
+        int neighbours_found = scan_list_neighbours();
+        log_info("Neighbour entries found: %d", neighbours_found);
         int routers_found = scan_list_gateways();
         log_info("Router entries found: %d", routers_found);
         int arps_found = scan_list_arp_hosts();

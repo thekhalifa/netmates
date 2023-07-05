@@ -184,6 +184,15 @@ void nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll
         len += sprintf(&buff[len], "%02x%s", sa_ll->sll_addr[i], i + 1 < sa_ll->sll_halen ? ":" : "");
 }
 
+void nm_format_hw_address_direct(char *buff, char *lladdr) {
+    if(buff == NULL || lladdr == NULL)
+        return;
+
+    char *pointer = buff;
+    for(int i=0; i < 6; i++)
+        pointer += sprintf(pointer, "%02x%s", (unsigned char)lladdr[i], i < 5 ? ":" : "");
+}
+
 bool nm_validate_hw_address(char *address, int real_address) {
     if(address == NULL || strlen(address) != 17)
         return false;
@@ -219,7 +228,7 @@ void nm_update_hw_vendor(char *hw_vendor, size_t size, const char *hw_addr){
         return;
     }
 
-    if(strlen(hw_addr) < NM_HWADDR_STRLEN)
+    if(strlen(hw_addr) < NM_HWADDR_STRLEN - 1)
         return;
     
     int tokens;

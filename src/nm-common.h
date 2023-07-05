@@ -23,7 +23,7 @@
 #define NM_MID_BUFFSIZE 256
 #define NM_LARGE_BUFFSIZE BUFSIZ
 #define NM_HOST_STRLEN 128
-#define NM_HWADDR_STRLEN 17
+#define NM_HWADDR_STRLEN 18
 #define NL_MIN_NETMASK_VALUE 0x00FFFFFF
 
 
@@ -64,6 +64,7 @@ nmlist     *nm_list_find_string(nmlist *list, const char *data);
 // void        nm_table_free(nmtable *table);
 
 void        nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll);
+void        nm_format_hw_address_direct(char *buff, char *lladdr);
 bool        nm_validate_hw_address(char *address, int real_address);
 void        nm_update_hw_vendor(char *hw_vendor, size_t size, const char *hw_addr);
 
