@@ -9,9 +9,9 @@
 
 #define NM_APPLICATION_UI_FILE "gui/nm-window.ui"
 #define NM_APPLICATION_CSS_FILE "gui/nm-style.css"
-#define NM_RESOURCE_BASE "/ws/khalifa/network-mates/"
+#define NM_RESOURCE_BASE "/uk/netmates/"
 #define NM_APPLICATION_ICON "network-wireless"
-#define NM_GUI_APP_NAME "ak.Network_List"
+#define NM_GUI_APP_NAME "uk.netmates"
 
 struct icon_def {
     char *icon;

@@ -7,6 +7,7 @@
 struct {
     int log_level;
     bool arg_list_format;
+    bool arg_brief_format;
     bool arg_known_only;
     bool arg_known_first;
     bool arg_scan_only;
@@ -60,6 +61,7 @@ void print_usage()
            "    -o, --subnet-offset <N>     offset the first host scan ipv4\n"
            "\n"
            "    -L, --list-format           print results as a list\n"
+           "    -B, --brief-format          print IPs, hostnames only\n"
            "    -g, --debug                 print debug messages\n"
            "    -G, --trace                 print trace messages\n"
            "    -v, --version               print version number and exit\n"
@@ -97,6 +99,8 @@ void process_args(int argc, char *argv[])
             log_set_level(LOG_TRACE);
         } else if (!strcmp(arg, "-L") || !strcmp(arg, "--list-format")) {
             nm_app.arg_list_format = true;
+        } else if (!strcmp(arg, "-B") || !strcmp(arg, "--brief-format")) {
+            nm_app.arg_brief_format = true;
         } else if (!strcmp(arg, "-k") || !strcmp(arg, "--known-only")) {
             nm_app.arg_known_only = true;
         } else if (!strcmp(arg, "-K") || !strcmp(arg, "--known-first")) {
@@ -182,6 +186,7 @@ int init_application(int argc, char **argv)
     scan_state *state = scan_getstate();
     state->opt_print = true;
     state->opt_print_list = nm_app.arg_list_format;
+    state->opt_print_brief = nm_app.arg_brief_format;
     state->opt_known_first = nm_app.arg_known_first;
     state->opt_known_only = nm_app.arg_known_only;
     state->opt_skip_resolve = nm_app.arg_skip_resolve;

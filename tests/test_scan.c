@@ -23,11 +23,11 @@ void queue_scan_address(uint32_t addr, GAsyncQueue *results_queue, GThreadPool *
 
 void check_scan_result(GAsyncQueue *results_queue, uint32_t addr, int response)
 {
-    scan_result *result;
+    probe_result *result;
     result = g_async_queue_pop(results_queue);
     g_assert_nonnull(result);
     g_assert_cmpuint(result->target.inaddr.s_addr, ==, ntohl(addr));
-    g_assert_cmpint(result->response, !=, SCAN_HSTATE_UNKNOWN);
+    g_assert_cmpint(result->response, !=, PROBE_HSTATE_UNKNOWN);
     if (response != -1)
         g_assert_cmpuint(result->response, ==, response);
     free(result);
@@ -90,7 +90,7 @@ MunitResult test_scan_thread(MUNIT_ARGS)
     g_assert_null(error);
 
     uint32_t addrs[] = {0xC0A80177, 0xC0A80101, 0xC0A800DC};
-    int resps[] = {SCAN_HSTATE_LIVE, SCAN_HSTATE_LIVE, SCAN_HSTATE_DEAD};
+    int resps[] = {PROBE_HSTATE_LIVE, PROBE_HSTATE_LIVE, PROBE_HSTATE_DEAD};
     int len = sizeof(addrs) / sizeof(addrs[0]);
 
     for (int i = 0; i < len; i++) {
@@ -138,22 +138,22 @@ MunitResult test_socket_set_saddr(MUNIT_ARGS)
     struct in_addr addr4;
 
     addr4.s_addr = inet_addr("192.168.0.1");
-    scan_socket_set_saddr((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, &addr4, 80);
+    probe_sock_set_saddr((struct sockaddr *)&saddr4, PROBE_FAMILY_INET4, &addr4, 80);
     check_saddr((struct sockaddr *)&saddr4, AF_INET, "192.168.0.1", 80);
 
     addr4.s_addr = inet_addr("192.168.1.152");
-    scan_socket_set_saddr((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, &addr4, 65350);
+    probe_sock_set_saddr((struct sockaddr *)&saddr4, PROBE_FAMILY_INET4, &addr4, 65350);
     check_saddr((struct sockaddr *)&saddr4, AF_INET, "192.168.1.152", 65350);
 
     struct sockaddr_in saddr6;
     struct in6_addr addr6;
 
     inet_pton(AF_INET6, "0123:4567:89ab:cdef:0123:4567:89ab:cdef", &addr6);
-    scan_socket_set_saddr((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, (struct in_addr *)&addr6, 80);
+    probe_sock_set_saddr((struct sockaddr *)&saddr6, PROBE_FAMILY_INET6, (struct in_addr *)&addr6, 80);
     check_saddr((struct sockaddr *)&saddr6, AF_INET6, "123:4567:89ab:cdef:123:4567:89ab:cdef", 80);
 
     inet_pton(AF_INET6, "fed0::1", &addr6);
-    scan_socket_set_saddr((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, (struct in_addr *)&addr6, 65432);
+    probe_sock_set_saddr((struct sockaddr *)&saddr6, PROBE_FAMILY_INET6, (struct in_addr *)&addr6, 65432);
     check_saddr((struct sockaddr *)&saddr6, AF_INET6, "fed0::1", 65432);
 
     return MUNIT_OK;
@@ -166,43 +166,29 @@ MunitResult test_socket_new_addr(MUNIT_ARGS)
 
     struct sockaddr_in saddr4;
 
-    scan_socket_addr_from_ip((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, "192.168.0.1", 80);
+    probe_sock_addr_from_ip((struct sockaddr *)&saddr4, PROBE_FAMILY_INET4, "192.168.0.1", 80);
     check_saddr((struct sockaddr *)&saddr4, AF_INET, "192.168.0.1", 80);
 
-    scan_socket_addr_from_ip((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, "10.255.0.1", 12345);
+    probe_sock_addr_from_ip((struct sockaddr *)&saddr4, PROBE_FAMILY_INET4, "10.255.0.1", 12345);
     check_saddr((struct sockaddr *)&saddr4, AF_INET, "10.255.0.1", 12345);
 
 
     struct sockaddr_in6 saddr6;
 
-    scan_socket_addr_from_ip((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, "beef::1", 80);
+    probe_sock_addr_from_ip((struct sockaddr *)&saddr6, PROBE_FAMILY_INET6, "beef::1", 80);
     check_saddr((struct sockaddr *)&saddr6, AF_INET6, "beef::1", 80);
 
-    scan_socket_addr_from_ip((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, "0123:4567:89ab:cdef:0123:4567:89ab:cdef", 12345);
+    probe_sock_addr_from_ip((struct sockaddr *)&saddr6, PROBE_FAMILY_INET6, "0123:4567:89ab:cdef:0123:4567:89ab:cdef", 12345);
     check_saddr((struct sockaddr *)&saddr6, AF_INET6, "123:4567:89ab:cdef:123:4567:89ab:cdef", 12345);
 
     return MUNIT_OK;
 }
-
-// int main (int argc, char **argv){
-//
-//     g_test_init(&argc, &argv, NULL);
-//     if(!g_test_verbose())
-//         g_log_set_handler(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO, nm_log_dummy, NULL);
-//
-//     g_test_add_func("/scan/subnet_range", test_subnet_range);
-//     g_test_add_func("/scan/util_hw_address", test_util_hw_address);
-//     g_test_add_func("/scan/scan_thread", test_scan_thread);
-//     return g_test_run();
-// }
 
 
 MUNIT_TESTS(tests,
             MUNIT_TEST("subnet_range", test_subnet_range)
             MUNIT_TEST("socket_set_saddr", test_socket_set_saddr)
             MUNIT_TEST("socket_new_addr", test_socket_new_addr)
-//    MUNIT_TEST("util_hw_address", test_util_hw_address)
-//    MUNIT_TEST("scan_thread", test_scan_thread)
            );
 
 MUNIT_SUITE(suite, "/scan/", tests);

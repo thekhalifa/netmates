@@ -6,12 +6,12 @@
 
 
 #define PROTO_NBS_QUERY "\x80\xf0\x00\x10\x00\x01\x00\x00\x00\x00\x00\x00\x20\x43\x4b\x41" \
-"\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41" \
-"\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21" \
-"\x00\x01"
+                        "\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41" \
+                        "\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x00\x00\x21" \
+                        "\x00\x01"
 
 
-typedef struct scan_result scan_result;
+typedef struct probe_result probe_result;
 
 typedef struct {
     int length;
@@ -85,15 +85,14 @@ extern proto_def proto_dns_definition;
 extern proto_def proto_mdns_definition;
 
 
-int     probe_string_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
+int     probe_generate_query_string(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
+int     proto_generate_query_dns_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
+int     proto_generate_query_dns(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
+int     proto_generate_query_mdns(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
+int     proto_generate_query_natpmp_public(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
 
-bool    probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
-
-int     probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
-int     probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
-
-int     probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr);
-bool    probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
+bool    probe_response_mdns(probe_result *result, const uint8_t *in_buffer, ssize_t in_size);
+bool    probe_response_ssdp(probe_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
 
 #endif // NM_PROTOCOL_H_INCLUDED

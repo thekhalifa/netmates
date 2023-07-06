@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_C_STANDARD 11)
 project(netmates VERSION 0.2 LANGUAGES C)
 set(PROJECT_AUTHOR "Ahmad Khalifa")
-set(PROJECT_HOMEPAGE_URL "https://khalifa.ws")
+set(PROJECT_HOMEPAGE_URL "https://netmates.uk")
 set(PROJECT_DESCRIPTION "Network discovery tool for local devices")
 set(PROJECT_DESCRIPTION_LONG "Network discovery tool for local devices.\n\
 Combining multiple discovery methods and available as command-line and a simple gtk-based interface.")
@@ -14,8 +14,11 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
 
 add_library(netmates-core STATIC src/nm-common.h src/nm-common.c
-                src/nm-host.h src/nm-host.c src/nm-scan.h src/nm-scan.c
-                src/nm-protocol.h src/nm-protocol.c src/nm-vendordb.h src/nm-vendordb.c
+                src/nm-host.h src/nm-host.c
+                src/nm-scan.h src/nm-scan.c
+                src/nm-probe.h src/nm-probe.c
+                src/nm-protocol.h src/nm-protocol.c
+                src/nm-vendordb.h src/nm-vendordb.c
                 src/log.h src/log.c)
 target_link_libraries(netmates-core PkgConfig::glib)
 

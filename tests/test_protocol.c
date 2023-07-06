@@ -55,15 +55,15 @@ MunitResult test_probe_generate_query(MUNIT_ARGS)
     struct sockaddr_in saddr;
     saddr.sin_addr.s_addr = (4 << 24 | 3 << 16 | 2 << 8 | 1);
 
-    retsize = probe_mdns_generate_query(buffer, sizeof(buffer), "_services._dns-sd._udp.local", (struct sockaddr *)&saddr);
+    retsize = proto_generate_query_mdns(buffer, sizeof(buffer), "_services._dns-sd._udp.local", (struct sockaddr *)&saddr);
     munit_assert_int(retsize, ==, sizeof(sample_mdns_services_query));
     munit_assert_memory_equal(sizeof(sample_mdns_services_query), buffer, sample_mdns_services_query);
 
-    retsize = probe_dns_generate_query(buffer, sizeof(buffer), "com", (struct sockaddr *)&saddr);
+    retsize = proto_generate_query_dns(buffer, sizeof(buffer), "com", (struct sockaddr *)&saddr);
     munit_assert_int(retsize, ==, sizeof(sample_dns_query1));
     munit_assert_memory_equal(sizeof(sample_dns_query1), buffer, sample_dns_query1);
 
-    retsize = probe_dns_generate_query_targetptr(buffer, sizeof(buffer), "", (struct sockaddr *)&saddr);
+    retsize = proto_generate_query_dns_targetptr(buffer, sizeof(buffer), "", (struct sockaddr *)&saddr);
     munit_assert_int(retsize, ==, sizeof(sample_dns_query2));
     munit_assert_memory_equal(sizeof(sample_dns_query2), buffer, sample_dns_query2);
 

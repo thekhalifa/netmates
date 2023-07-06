@@ -9,7 +9,6 @@ MunitResult test_blank(MUNIT_ARGS)
 {
     nm_host *entry = nm_host_init(HOST_TYPE_LOCALHOST);
     munit_assert_true(entry->type == HOST_TYPE_LOCALHOST);
-    //munit_assert_uint(entry->ip_addr, ==, 0);
     munit_assert_null(entry->ip);
     munit_assert_null(entry->ip6);
     munit_assert_null(entry->hw_if.addr);
@@ -212,44 +211,6 @@ MunitResult test_sort_list(MUNIT_ARGS)
 
     return MUNIT_OK;
 }
-
-
-/*
-void test_other_field_leaks(void) {
-
-    struct mallinfo mi;
-    mi = mallinfo();
-    int mem_inuse = mi.uordblks;
-
-    g_info("\t\t> Pre Allocation ------------[%6i]", mem_inuse);
-
-    nm_host *entries[10];
-    int num_entries = sizeof(entries) / sizeof(entries[0]);
-    g_info("\t\t  Allocating %lu in array %i total struct sizes %lu",
-           sizeof(nm_host), num_entries, num_entries * sizeof(nm_host));
-    for(int i=0; i<num_entries; i++){
-        entries[i] = nm_host_init(HOST_TYPE_UNKNOWN);
-        entries[i]->list_ip = nm_host_other_add(entries[i]->list_ip, "255.255.255.255");
-        entries[i]->list_ip = nm_host_other_add(entries[i]->list_ip, "10.255.255.255");
-        entries[i]->list_ip6 = nm_host_other_add(entries[i]->list_ip6, "fido:abcd:bff7:0123:ffff:b9a1:ac35:8f3b");
-        entries[i]->list_ip6 = nm_host_other_add(entries[i]->list_ip6, "dido:abcd:bff7:0123:ffff:b9a1:ac35:8f3b");
-        entries[i]->list_hw_addr = nm_host_other_add(entries[i]->list_hw_addr, "AB:CD:EF:12:12:12");
-        entries[i]->list_hw_addr = nm_host_other_add(entries[i]->list_hw_addr, "BB:CD:EF:12:12:12");
-    }
-
-
-    mi = mallinfo();
-    g_info("\t\t> Post Allocation -----------[%6i] difference [%6i]", mi.uordblks, mi.uordblks - mem_inuse);
-
-    for(int i=0; i<num_entries; i++) {
-        nm_host_destroy(entries[i]);
-    }
-
-    mi = mallinfo();
-    g_info("\t\t> Post Freeing --------------[%6i] difference [%6i]", mi.uordblks, mi.uordblks - mem_inuse);
-
-}
-*/
 
 
 MUNIT_TESTS(tests,

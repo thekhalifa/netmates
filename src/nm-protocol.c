@@ -46,36 +46,42 @@ static proto_query proto_mdns_queries[] = {
     {.message = "_amzn-wplay._tcp.local"},
     {.message = "_amzn-alexa._tcp.local"},
     {.message = "_spotify-connect._tcp.local"},
+    {.message = "_googlecast._tcp.local"},
+    {.message = "_airplay._tcp.local"},
     {.message = "_smb._tcp.local"},
     {.message = "_ipp._tcp.local"},
+    {.message = "_ipp-tls._tcp.local"},
+    //{.message = "_fax-ipp._tcp.local"},
+    //{.message = "_pdl-datastream._tcp.local"},
+    {.message = "_printer._tcp.local"},
+    {.message = "_webdav._tcp.local"},
     {.message = "_hap._tcp.local"},
     {.message = "_homekit._tcp.local"},
-    {.message = "_airplay._tcp.local"},
     {.message = "_companion-link._tcp.local"},
     {.message = "_raop._tcp.local"},
     {.message = "_matter._udp.local"},
     {.message = "_matterc._udp.local"},
-    {.message = "_webdav._tcp.local"},
-    //{.message = "_viziocast._udp.local"},
-    //{.message = "_sengled._udp.local"},
     {},
 };
+
 
 static proto_signature proto_mdns_signatures[] = {
     {.signature = "_amzn-wplay._tcp", .service_name = "amazon-wplay", .host_type = HOST_TYPE_TV},
     {.signature = "_amzn-alexa._tcp", .service_name = "alexa", .host_type = HOST_TYPE_DEVICE},
     {.signature = "_spotify-connect._tcp", .service_name = "spotify", .host_type = HOST_TYPE_UNKNOWN},
-    {.signature = "_smb._tcp", .service_name = "smb-mdns", .host_type = HOST_TYPE_PC},
-    {.signature = "_ipp._tcp", .service_name = "ipp", .host_type = HOST_TYPE_DEVICE},
+    {.signature = "_googlecast._tcp", .service_name = "chromecast", .host_type = HOST_TYPE_TV},
+    {.signature = "_airplay._tcp", .service_name = "airplay", .host_type = HOST_TYPE_UNKNOWN},
+    {.signature = "_smb._tcp", .service_name = "smb", .host_type = HOST_TYPE_PC},
+    {.signature = "_ipp._tcp", .service_name = "ipp", .host_type = HOST_TYPE_PRINTER},
+    {.signature = "_ipp-tls._tcp", .service_name = "ipp-tls", .host_type = HOST_TYPE_PRINTER},
+    {.signature = "_printer._tcp", .service_name = "printer", .host_type = HOST_TYPE_PRINTER},
+    {.signature = "_webdav._tcp", .service_name = "webdav", .host_type = HOST_TYPE_PC},
     {.signature = "_hap._tcp", .service_name = "hap", .host_type = HOST_TYPE_DEVICE},
     {.signature = "_homekit._tcp", .service_name = "homekit", .host_type = HOST_TYPE_UNKNOWN},
-    {.signature = "_airplay._tcp", .service_name = "homekit", .host_type = HOST_TYPE_UNKNOWN},
     {.signature = "_companion-link._tcp", .service_name = "homekit", .host_type = HOST_TYPE_UNKNOWN},
-    {.signature = "_webdav._tcp", .service_name = "webdav", .host_type = HOST_TYPE_PC},
     {.signature = "_raop._tcp", .service_name = "homekit", .host_type = HOST_TYPE_UNKNOWN},
     {.signature = "_matter._udp", .service_name = "matterc", .host_type = HOST_TYPE_UNKNOWN},
     {.signature = "_matterc._udp", .service_name = "matterc", .host_type = HOST_TYPE_UNKNOWN},
-    //{.signature = "_viziocast._tcp", .service_name = "hap", .host_type = HOST_TYPE_UNKNOWN},
     {},
 };
 
@@ -94,7 +100,7 @@ proto_def proto_dns_definition = {
     .queries = proto_dns_queries,
 };
 
-int probe_string_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
+int probe_generate_query_string(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
     size_t msgsize = strlen(message);
     msgsize = msgsize > buffsize ? buffsize : msgsize;
@@ -103,63 +109,13 @@ int probe_string_generate_query(char *buff, size_t buffsize, char *message, stru
 
 }
 
-bool probe_ssdp_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size)
+
+int proto_generate_query_natpmp_public(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
-    assert(in_buffer != NULL);
-
-    //static char *header_search = "M-SEARCH * HTTP/1.1";
-    static char *response_header_notify = "NOTIFY * HTTP/1.1";
-    static char *response_header_ok = "HTTP/1.1 200 OK";
-    static char *key_notify_type = "NT:";
-    static char *key_search_type = "ST:";
-
-    char line[NM_GEN_BUFFSIZE], key_token[64], value_token[NM_GEN_BUFFSIZE];
-    char *key_type = NULL;
-    proto_signature *signature;
-
-    nm_log_trace_buffer("probe_ssdp_response", in_buffer, in_size);
-
-    int num_lines = nm_string_count_lines((const char *)in_buffer, in_size);
-    if (num_lines < 5) {
-        log_trace("probe_ssdp_response - not enough lines to begin checking, skipping");
-        return false;
-    }
-
-    nm_string_copy_line((const char *)in_buffer, in_size, 0, line, sizeof(line));
-    if (!strncmp(line, response_header_notify,
-                 strlen(response_header_notify))) {
-        key_type = key_notify_type;
-    } else if (!strncmp(line, response_header_ok,
-                        strlen(response_header_ok))) {
-        key_type = key_search_type;
-    }
-    if (!key_type)
-        return false;
-
-    if (!nm_list_find_string(result->services, "ssdp"))
-        result->services = nm_list_add(result->services, strdup("ssdp"));
-
-    for (int i = 0; i < num_lines; i++) {
-        nm_string_copy_line((const char *)in_buffer, in_size, i, line, sizeof(line));
-        key_token[0] = 0;
-        value_token[0] = 0;
-        sscanf(line, "%[a-zA-Z0-9:-] %s", key_token, value_token);
-        if (!strlen(key_token) || strcmp(key_token, key_type))
-            continue;
-
-        //key matches, now compare value to known signatures
-        for (signature = proto_ssdp_definition.signatures; signature->signature; signature++) {
-            if (strstr(value_token, signature->signature)) {
-                log_trace("probe_ssdp_response: found signature: %s", signature->signature);
-                if (signature->service_name)
-                    result->services = nm_list_add(result->services, strdup(signature->service_name));
-                return true;
-            }
-        }
-        break;
-    }
-
-    return true;
+    size_t msgsize = 2;
+    message[0] = 0;
+    message[1] = 0;
+    return msgsize;
 }
 
 /* convert c-string to dns-string prefixed by length and no . */
@@ -255,7 +211,7 @@ size_t proto_dns_compose_query(uint8_t *buff, size_t bufflen, uint16_t mid, char
 }
 
 /* generate a PTR query to the /addr/ ip 1.2.3.4 becomes 4.3.2.1.in-addr.arpa */
-int probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
+int proto_generate_query_dns_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
     size_t msgsize;
     char query[NM_HOST_STRLEN];
@@ -275,34 +231,34 @@ int probe_dns_generate_query_targetptr(char *buff, size_t buffsize, char *messag
 }
 
 /* generate a PTR query with /message/ */
-int probe_dns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
+int proto_generate_query_dns(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
     size_t msgsize;
 
-    msgsize = proto_dns_compose_query((void *)buff, buffsize, 0x5601,
+    msgsize = proto_dns_compose_query((void *)buff, buffsize, (uint16_t)(random() % 0xFFFF),
                                       message, PROTO_DNS_TYPE_PTR,
                                       PROTO_DNS_CLASS_IN);
     return msgsize;
 }
 
 /* generate a PTR query with /message/ and UNICAST flag */
-int probe_mdns_generate_query(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
+int proto_generate_query_mdns(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
     size_t msgsize;
-    msgsize = proto_dns_compose_query((void *)buff, buffsize, 0x1234,
+    msgsize = proto_dns_compose_query((void *)buff, buffsize, (uint16_t)(random() % 0xFFFF),
                                       message, PROTO_DNS_TYPE_PTR,
                                       PROTO_DNS_CLASS_IN_UNICAST);
     return msgsize;
 }
 
 
-bool probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t in_size)
+bool probe_response_mdns(probe_result *result, const uint8_t *in_buffer, ssize_t in_size)
 {
     assert(in_buffer != NULL);
 
     const uint8_t *pointer = in_buffer;
     const uint8_t *endpointer = pointer + in_size;
-    char buffer[512];
+    char buffer[512], valbuffer[512];
     size_t retsize;
     proto_dns_message message;
     memset(&message, 0, sizeof(proto_dns_message));
@@ -352,12 +308,24 @@ bool probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
                   i + 1, message.rrecord.class, message.rrecord.type, message.rrecord.ttl,
                   message.rrecord.rdlength, retsize, buffer);
         if (message.rrecord.type == PROTO_DNS_TYPE_PTR) {
-            retsize = proto_dns_decompile_string(pointer, in_buffer, buffer, sizeof(buffer));
+            retsize = proto_dns_decompile_string(pointer, in_buffer, valbuffer, sizeof(valbuffer));
+            //log_trace("probe_mdns_response: PTR: %s -> %s", buffer, valbuffer);
+            //18:18:01 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _services._dns-sd._udp.local -> _amzn-wplay._tcp.local
+            //18:18:00 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _hap._tcp.local -> tado Internet Bridge IB1619341568._hap._tcp.local
+            //18:18:00 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _smb._tcp.local -> FRACTAL._smb._tcp.local
+            //18:18:01 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _amzn-wplay._tcp.local -> amzn.dmgr:A1D89D4E2313B53AAA1CBFB5915E7A0E:xnVDMM+4u1:314947._amzn-wplay._tcp.local
+            
+            //_googlecast._tcp.local: type PTR, class IN, Chromecast-Ultra-38d0a53a70141ad71d2b2f9eaf55dc39._googlecast._tcp.local
+            
+            //TODO: check that it's not a blank answer 
+            //_smb._tcp.local vs. FRACTAL._smb._tcp.local
+            //TODO: show other services without _ and _proto.local
             for (proto_signature *s = proto_mdns_definition.signatures; s->signature; s++) {
-                //log_trace("probe_mdns_response: looking for signature: %s in %s", s->signature, buffer);
-                if (strstr(buffer, s->signature)) {
+                //log_trace("probe_mdns_response: looking for signature: %s in %s", s->signature, valbuffer);
+                if (strstr(valbuffer, s->signature)) {
                     log_trace("probe_mdns_response: found signature: %s", s->signature);
-                    result->host_type = s->host_type;
+                    if (s->host_type > result->host_type)
+                        result->host_type = s->host_type;
                     if (s->service_name)
                         result->services = nm_list_add(result->services, strdup(s->service_name));
                     break;
@@ -366,6 +334,67 @@ bool probe_mdns_response(scan_result *result, const uint8_t *in_buffer, ssize_t 
 
         }
         pointer += message.rrecord.rdlength;
+    }
+
+    return true;
+}
+
+bool probe_response_ssdp(probe_result *result, const uint8_t *in_buffer, ssize_t in_size)
+{
+    assert(in_buffer != NULL);
+
+    //static char *header_search = "M-SEARCH * HTTP/1.1";
+    static char *response_header_notify = "NOTIFY * HTTP/1.1";
+    static char *response_header_ok = "HTTP/1.1 200 OK";
+    static char *key_notify_type = "NT:";
+    static char *key_search_type = "ST:";
+
+    char line[NM_GEN_BUFFSIZE], key_token[64], value_token[NM_GEN_BUFFSIZE];
+    char *key_type = NULL;
+    proto_signature *signature;
+
+    nm_log_trace_buffer("probe_ssdp_response", in_buffer, in_size);
+
+    int num_lines = nm_string_count_lines((const char *)in_buffer, in_size);
+    if (num_lines < 5) {
+        log_trace("probe_ssdp_response - not enough lines to begin checking, skipping");
+        return false;
+    }
+
+    nm_string_copy_line((const char *)in_buffer, in_size, 0, line, sizeof(line));
+    if (!strncmp(line, response_header_notify,
+                 strlen(response_header_notify))) {
+        key_type = key_notify_type;
+    } else if (!strncmp(line, response_header_ok,
+                        strlen(response_header_ok))) {
+        key_type = key_search_type;
+    }
+    if (!key_type)
+        return false;
+
+    if (!nm_list_find_string(result->services, "ssdp"))
+        result->services = nm_list_add(result->services, strdup("ssdp"));
+
+    for (int i = 0; i < num_lines; i++) {
+        nm_string_copy_line((const char *)in_buffer, in_size, i, line, sizeof(line));
+        key_token[0] = 0;
+        value_token[0] = 0;
+        sscanf(line, "%[a-zA-Z0-9:-] %s", key_token, value_token);
+        if (!strlen(key_token) || strcmp(key_token, key_type))
+            continue;
+
+        //key matches, now compare value to known signatures
+        for (signature = proto_ssdp_definition.signatures; signature->signature; signature++) {
+            if (strstr(value_token, signature->signature)) {
+                log_trace("probe_ssdp_response: found signature: %s", signature->signature);
+                if (signature->host_type > result->host_type)
+                    result->host_type = signature->host_type;
+                if (signature->service_name)
+                    result->services = nm_list_add(result->services, strdup(signature->service_name));
+                return true;
+            }
+        }
+        break;
     }
 
     return true;

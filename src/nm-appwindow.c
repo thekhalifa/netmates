@@ -375,7 +375,8 @@ int init_application(int argc, char **argv)
 
     scan_init();
 
-    GtkApplication *gtk_app = gtk_application_new(NM_GUI_APP_NAME, G_APPLICATION_FLAGS_NONE);
+    GtkApplication *gtk_app = gtk_application_new(NM_GUI_APP_NAME, 0 /* G_APPLICATION_FLAGS_NONE, 
+                                        0 because glib is annoying, new flag is not in <2.74 */);
     g_signal_connect(gtk_app, "activate", G_CALLBACK(on_app_activate), (void *)true);
     status = g_application_run(G_APPLICATION(gtk_app), argc, argv);
 

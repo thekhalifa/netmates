@@ -72,8 +72,9 @@ void        nm_host_add_service(nm_host *host, char *service);
 void        nm_host_add_services(nm_host *host, nmlist *services);
 void        nm_host_add_ports(nm_host *host, nmlist *ports);
 void        nm_host_add_port(nm_host *host, uint16_t port, char *method);
-void        nm_host_print_wide(nm_host *host);
+void        nm_host_print_brief(nm_host *host);
 void        nm_host_print_long(nm_host *host);
+void        nm_host_print_wide(nm_host *host);
 const char *nm_host_label(nm_host *host);
 const char *nm_host_type(nm_host *host);
 /* entry merge functions */

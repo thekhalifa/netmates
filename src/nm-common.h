@@ -28,7 +28,6 @@
 
 
 typedef GList nmlist;
-//typedef GHashTable nmtable;
 
 static GMutex nm_log_lock;
 

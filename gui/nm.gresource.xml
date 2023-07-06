@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-    <gresource prefix="/ws/khalifa/network-mates">
+    <gresource prefix="/uk/netmates">
         <file preprocess="xml-stripblanks">gui/nm-window.ui</file>
         <file>gui/nm-style.css</file>
     </gresource>

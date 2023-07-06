@@ -161,16 +161,6 @@ MunitResult test_list_free(MUNIT_ARGS)
     munit_assert_null(list3->data);
 
     nm_list_free(list1, true);
-//     munit_assert_null(list1->data);
-//     munit_assert_null(list2->data);
-//     munit_assert_null(list3->data);
-
-//     char *str4 = "static text";
-//     nmlist *list4 = nm_list_add(NULL, str4);
-//     nm_list_free(list4, false);
-//     munit_assert_true(list4->data == str4);
-//     munit_assert_string_equal(str4, "static text");
-
 
     return MUNIT_OK;
 }
@@ -182,7 +172,6 @@ MunitResult test_list_find(MUNIT_ARGS)
     char *str3 = "new";
 
     nmlist *list1 = nm_list_add(NULL, str1);
-    nmlist *list2 = nm_list_add(list1, str2);
     nmlist *list3 = nm_list_add(list1, str3);
 
     nmlist *f1 = nm_list_find_string(list1, str1);
@@ -320,25 +309,6 @@ MunitResult test_path_string(MUNIT_ARGS)
 
     return MUNIT_OK;
 }
-
-
-/*
-
-MunitTest tests[] = {
-    {"/time_ms", test_time_ms, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL},
-    {"/string_extract_token", test_string_extract_token, NULL, NULL, 0, NULL},
-    {"/string_count_lines", test_string_count_lines, NULL, NULL, 0, NULL},
-    {"/string_copy_line", test_string_copy_line, NULL, NULL, 0, NULL},
-    { 0 }
-};
-
-static const MunitSuite suite = {"/common", tests, NULL, 1, 0 };
-
-int main(int argc, char* const argv[]) {
-    munit_suite_main(&suite, NULL, argc, argv);
-    return 0;
-}
-*/
 
 
 MUNIT_TESTS(tests,
