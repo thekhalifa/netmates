@@ -4,7 +4,8 @@
 #include "nm-vendordb.h"
 
 
-MunitResult test_db_full(MUNIT_ARGS){
+MunitResult test_db_full(MUNIT_ARGS)
+{
     munit_assert_null(vendor_db_query("123456"));
     munit_assert_false(vendor_db_init());
     munit_assert_null(vendor_db_query(NULL));
@@ -29,13 +30,13 @@ MunitResult test_db_full(MUNIT_ARGS){
     munit_assert_string_equal(vendor_db_query("C4084A"), "Nokia");
 
     munit_assert_false(vendor_db_destroy());
-    
+
     return MUNIT_OK;
 }
 
 
-MunitResult test_db_timing(MUNIT_ARGS){
-
+MunitResult test_db_timing(MUNIT_ARGS)
+{
     munit_assert_false(vendor_db_init());
 
     unsigned long start = nm_time_ms();
@@ -55,10 +56,10 @@ MunitResult test_db_timing(MUNIT_ARGS){
 }
 
 
-MUNIT_TESTS(tests, 
-    MUNIT_TEST("db_full", test_db_full)
-    MUNIT_TEST("db_timing", test_db_timing)
-);
+MUNIT_TESTS(tests,
+            MUNIT_TEST("db_full", test_db_full)
+            MUNIT_TEST("db_timing", test_db_timing)
+           );
 
 MUNIT_SUITE(suite, "/vendordb/", tests);
 MUNIT_MAIN(suite);

@@ -32,36 +32,26 @@ typedef GList nmlist;
 
 static GMutex nm_log_lock;
 
-extern char * nm_clr_title;
-extern char * nm_clr_strong;
-extern char * nm_clr_light;
-extern char * nm_clr_off;
+extern char *nm_clr_title;
+extern char *nm_clr_strong;
+extern char *nm_clr_light;
+extern char *nm_clr_off;
 
 /* get current time in milliseconds */
 unsigned long   nm_time_ms();
 unsigned long   nm_time_ms_diff(unsigned long start);
 
-void    nm_string_toupper(char *str);
-char   *nm_string_extract_token(char *line, char delimiter, int index);
-int     nm_string_count_lines(const char *line, size_t len);
-void    nm_string_copy_line(const char *line, size_t line_len, int index,
-                                    char *copy_to, size_t copy_max);
-static inline unsigned long nm_string_len(const char *str){
-    if(str) return strlen(str);
-    return 0;
-}
+void        nm_string_toupper(char *str);
+char       *nm_string_extract_token(char *line, char delimiter, int index);
+int         nm_string_count_lines(const char *line, size_t len);
+void        nm_string_copy_line(const char *line, size_t line_len, int index,
+                                char *copy_to, size_t copy_max);
 
-nmlist     *nm_list_add(nmlist* to, void *newdata);
+nmlist     *nm_list_add(nmlist *to, void *newdata);
 void        nm_list_free(nmlist *list, bool free_data);
 uint        nm_list_len(nmlist *list);
 nmlist     *nm_list_find_string(nmlist *list, const char *data);
 #define     nm_list_foreach(n, l) for(nmlist* n = l; n; n = n->next)
-
-// nmtable    *nm_table_new();
-// uint        nm_table_len(nmtable *table);
-// void       *nm_table_get_num(nmtable *table, uint32_t num);
-// void        nm_table_set_num(nmtable *table, uint32_t num, void *data);
-// void        nm_table_free(nmtable *table);
 
 void        nm_format_hw_address(char *buff, size_t buff_len, struct sockaddr_ll *sa_ll);
 void        nm_format_hw_address_direct(char *buff, char *lladdr);
@@ -74,5 +64,11 @@ void        nm_log_trace_bytes(const char *sign, const uint8_t *data, int len);
 void        nm_log_set_lock(bool state, void *data);
 void        nm_enable_colour();
 char       *nm_path_string(const char *inpath, char *fullpath);
+
+static inline unsigned long nm_string_len(const char *str)
+{
+    if (str) return strlen(str);
+    return 0;
+}
 
 #endif //NETWORK_MATES_NM_COMMON_H

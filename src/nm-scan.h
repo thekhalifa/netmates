@@ -19,14 +19,14 @@
 #include "nm-protocol.h"
 
 
-enum scan_family{
+enum scan_family {
     SCAN_FAMILY_INET4 = 0,
     SCAN_FAMILY_INET6
 };
 //this allows the ports to be set to 0 and reduces having to define family
 #define SCAN_FAMILY_TO_AF(x) x == SCAN_FAMILY_INET6 ? AF_INET6 : AF_INET
 
-enum scan_method{
+enum scan_method {
     SCAN_NONE = 0,
     SCAN_TCP_CONNECT,
     SCAN_TCP_QUERY,
@@ -46,14 +46,14 @@ static char *scan_method_label[] = {
     ""
 };
 
-enum scan_host_state{
+enum scan_host_state {
     SCAN_HSTATE_UNKNOWN,
     SCAN_HSTATE_LIVE,
     SCAN_HSTATE_DEAD,
     SCAN_HSTATE_ERROR
 };
 
-typedef struct{
+typedef struct {
     bool init;
     bool running;
     bool opt_print;
@@ -89,7 +89,7 @@ typedef struct {
 
 typedef struct scan_port scan_port;
 
-typedef struct scan_result{
+typedef struct scan_result {
     enum scan_host_state response;
     enum nm_host_type host_type;
     char *hostname;
@@ -104,10 +104,10 @@ typedef struct scan_result{
     nmlist *services;
     enum scan_method method;
     enum scan_family family;
-}scan_result;
+} scan_result;
 
 
-typedef int (*scan_query_callback)(char *buffer, size_t buffsize, char* data, struct sockaddr *targetaddr);
+typedef int (*scan_query_callback)(char *buffer, size_t buffsize, char *data, struct sockaddr *targetaddr);
 typedef bool(*scan_response_callback)(scan_result *result, const uint8_t *in_buffer, ssize_t in_size);
 
 struct scan_port {
@@ -144,10 +144,10 @@ int             scan_resolve_hostname_new(enum scan_family family, char *ip, cha
 //TODO: merge with ipv4 version
 //int             scan_resolve_hostname(char *ip, char *hostname_buffer, size_t buffer_size);
 //int             scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size);
-ssize_t         scan_socket_set_saddr(struct sockaddr *saddr, enum scan_family family, 
+ssize_t         scan_socket_set_saddr(struct sockaddr *saddr, enum scan_family family,
                                       struct in_addr *inaddr, uint16_t port);
 ssize_t         scan_socket_addr_from_ip(struct sockaddr *saddr, enum scan_family family,
-                                         const char *ip, uint16_t port);
+        const char *ip, uint16_t port);
 
 /* application & scan functions */
 void            scan_print_mates(nmlist *hosts, bool showtotal);

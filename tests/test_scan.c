@@ -3,40 +3,43 @@
 #include "nm-common.h"
 #include "nm-scan.h"
 
-void queue_scan_address(uint32_t addr, GAsyncQueue *results_queue, GThreadPool *thread_pool, GError **error) {
+void queue_scan_address(uint32_t addr, GAsyncQueue *results_queue, GThreadPool *thread_pool, GError **error)
+{
     uint32_t unused_work, returned_count, max_test_time = 60;
     g_thread_pool_push(thread_pool, (gpointer)(intptr_t) ntohl(addr), error);
 
-    int i=0;
-    for(; i<=max_test_time;i++) {
+    int i = 0;
+    for (; i <= max_test_time; i++) {
         sleep(1);
         unused_work = g_thread_pool_unprocessed(thread_pool);
         returned_count = g_async_queue_length(results_queue);
-        if(unused_work > 0 || returned_count < 1)
+        if (unused_work > 0 || returned_count < 1)
             continue;
-        else if(returned_count == 1)
+        else if (returned_count == 1)
             break;
     }
     g_assert_cmpuint(i, <, max_test_time);
 }
 
-void check_scan_result(GAsyncQueue *results_queue, uint32_t addr, int response) {
+void check_scan_result(GAsyncQueue *results_queue, uint32_t addr, int response)
+{
     scan_result *result;
     result = g_async_queue_pop(results_queue);
     g_assert_nonnull(result);
     g_assert_cmpuint(result->target.inaddr.s_addr, ==, ntohl(addr));
     g_assert_cmpint(result->response, !=, SCAN_HSTATE_UNKNOWN);
-    if(response != -1)
+    if (response != -1)
         g_assert_cmpuint(result->response, ==, response);
     free(result);
 }
 
 
-void check_subnet_range(char *ip_str, char *netmask_str, const char *start_str, 
-                        const char *stop_str, int length, uint32_t base_addr){
+void check_subnet_range(char *ip_str, char *netmask_str, const char *start_str,
+                        const char *stop_str, int length, uint32_t base_addr)
+{
     uint32_t addr;
     scan_range range;
-    
+
     //struct in_addr startinaddr, endinaddr;
     char startbuff[INET_ADDRSTRLEN];
     char endbuff[INET_ADDRSTRLEN];
@@ -50,15 +53,16 @@ void check_subnet_range(char *ip_str, char *netmask_str, const char *start_str,
     //g_assert_cmpstr(stop_str, ==, range.stop_ipstr);
     munit_assert_int(length, ==, range.length);
 
-    addr = ntohl(base_addr+1);
+    addr = ntohl(base_addr + 1);
     munit_assert_uint(addr, ==, range.start_addr.s_addr);
-    addr = ntohl(base_addr+length);
+    addr = ntohl(base_addr + length);
     munit_assert_uint(addr, ==, range.stop_addr.s_addr);
     //scan_util_destroy_subnet_range(&range);
 }
 
 
-MunitResult test_subnet_range(MUNIT_ARGS){
+MunitResult test_subnet_range(MUNIT_ARGS)
+{
 
     check_subnet_range("192.168.0.1", "255.255.255.0", "192.168.0.1", "192.168.0.254", 254, 0xC0A80000);
     check_subnet_range("192.168.254.255", "255.255.255.0", "192.168.254.1", "192.168.254.254", 254, 0xC0A8FE00);
@@ -73,7 +77,8 @@ MunitResult test_subnet_range(MUNIT_ARGS){
 }
 
 
-MunitResult test_scan_thread(MUNIT_ARGS){
+MunitResult test_scan_thread(MUNIT_ARGS)
+{
     GAsyncQueue *results_queue;
     GThreadPool *thread_pool;
     GError *error = NULL;
@@ -88,7 +93,7 @@ MunitResult test_scan_thread(MUNIT_ARGS){
     int resps[] = {SCAN_HSTATE_LIVE, SCAN_HSTATE_LIVE, SCAN_HSTATE_DEAD};
     int len = sizeof(addrs) / sizeof(addrs[0]);
 
-    for(int i=0; i<len; i++){
+    for (int i = 0; i < len; i++) {
         g_test_message("  -> Queue scan address for %x ", addrs[i]);
         queue_scan_address(addrs[i], results_queue, thread_pool, &error);
         g_assert_null(error);
@@ -99,20 +104,21 @@ MunitResult test_scan_thread(MUNIT_ARGS){
     g_thread_pool_free(thread_pool, TRUE, TRUE);
     thread_pool = NULL;
     return MUNIT_OK;
-    
+
 }
 
-void check_saddr(struct sockaddr *saddr, int family, const char *ip, uint16_t port){
+void check_saddr(struct sockaddr *saddr, int family, const char *ip, uint16_t port)
+{
 
     char ipbuff[128];
     munit_assert_int(saddr->sa_family, ==, family);
-    if(saddr->sa_family == AF_INET){
+    if (saddr->sa_family == AF_INET) {
         struct sockaddr_in *saddr4 = (struct sockaddr_in *)saddr;
         inet_ntop(family, &saddr4->sin_addr, ipbuff, sizeof(ipbuff));
         munit_assert_uint(saddr4->sin_port, ==, htons(port));
         munit_assert_uint(saddr4->sin_addr.s_addr, ==, inet_addr(ip));
         munit_assert_string_equal(ipbuff, ip);
-    }else if(saddr->sa_family == AF_INET6){
+    } else if (saddr->sa_family == AF_INET6) {
         struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)saddr;
         struct in6_addr in6;
         inet_ntop(family, &saddr6->sin6_addr, ipbuff, sizeof(ipbuff));
@@ -120,68 +126,70 @@ void check_saddr(struct sockaddr *saddr, int family, const char *ip, uint16_t po
         inet_pton(AF_INET6, ip, &in6);
         munit_assert_string_equal(ipbuff, ip);
         munit_assert_memory_equal(sizeof(in6), &saddr6->sin6_addr, &in6);
-    }else
+    } else
         munit_assert(false);    //should not be here
-    
+
 }
 
-MunitResult test_socket_set_saddr(MUNIT_ARGS){
+MunitResult test_socket_set_saddr(MUNIT_ARGS)
+{
 
     struct sockaddr_in saddr4;
     struct in_addr addr4;
-    
+
     addr4.s_addr = inet_addr("192.168.0.1");
-    scan_socket_set_saddr((struct sockaddr*)&saddr4, SCAN_FAMILY_INET4, &addr4, 80);
-    check_saddr((struct sockaddr*)&saddr4, AF_INET, "192.168.0.1", 80);
-    
+    scan_socket_set_saddr((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, &addr4, 80);
+    check_saddr((struct sockaddr *)&saddr4, AF_INET, "192.168.0.1", 80);
+
     addr4.s_addr = inet_addr("192.168.1.152");
-    scan_socket_set_saddr((struct sockaddr*)&saddr4, SCAN_FAMILY_INET4, &addr4, 65350);
-    check_saddr((struct sockaddr*)&saddr4, AF_INET, "192.168.1.152", 65350);
-    
+    scan_socket_set_saddr((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, &addr4, 65350);
+    check_saddr((struct sockaddr *)&saddr4, AF_INET, "192.168.1.152", 65350);
+
     struct sockaddr_in saddr6;
     struct in6_addr addr6;
 
     inet_pton(AF_INET6, "0123:4567:89ab:cdef:0123:4567:89ab:cdef", &addr6);
-    scan_socket_set_saddr((struct sockaddr*)&saddr6, SCAN_FAMILY_INET6, (struct in_addr*)&addr6, 80);
-    check_saddr((struct sockaddr*)&saddr6, AF_INET6, "123:4567:89ab:cdef:123:4567:89ab:cdef", 80);
-    
+    scan_socket_set_saddr((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, (struct in_addr *)&addr6, 80);
+    check_saddr((struct sockaddr *)&saddr6, AF_INET6, "123:4567:89ab:cdef:123:4567:89ab:cdef", 80);
+
     inet_pton(AF_INET6, "fed0::1", &addr6);
-    scan_socket_set_saddr((struct sockaddr*)&saddr6, SCAN_FAMILY_INET6, (struct in_addr*)&addr6, 65432);
-    check_saddr((struct sockaddr*)&saddr6, AF_INET6, "fed0::1", 65432);
+    scan_socket_set_saddr((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, (struct in_addr *)&addr6, 65432);
+    check_saddr((struct sockaddr *)&saddr6, AF_INET6, "fed0::1", 65432);
 
     return MUNIT_OK;
 }
 
 
 
-MunitResult test_socket_new_addr(MUNIT_ARGS){
+MunitResult test_socket_new_addr(MUNIT_ARGS)
+{
 
     struct sockaddr_in saddr4;
-    
-    scan_socket_addr_from_ip((struct sockaddr*)&saddr4, SCAN_FAMILY_INET4, "192.168.0.1", 80);
-    check_saddr((struct sockaddr*)&saddr4, AF_INET, "192.168.0.1", 80);
-    
-    scan_socket_addr_from_ip((struct sockaddr*)&saddr4, SCAN_FAMILY_INET4, "10.255.0.1", 12345);
-    check_saddr((struct sockaddr*)&saddr4, AF_INET, "10.255.0.1", 12345);
 
-    
+    scan_socket_addr_from_ip((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, "192.168.0.1", 80);
+    check_saddr((struct sockaddr *)&saddr4, AF_INET, "192.168.0.1", 80);
+
+    scan_socket_addr_from_ip((struct sockaddr *)&saddr4, SCAN_FAMILY_INET4, "10.255.0.1", 12345);
+    check_saddr((struct sockaddr *)&saddr4, AF_INET, "10.255.0.1", 12345);
+
+
     struct sockaddr_in6 saddr6;
-    
-    scan_socket_addr_from_ip((struct sockaddr*)&saddr6, SCAN_FAMILY_INET6, "beef::1", 80);
-    check_saddr((struct sockaddr*)&saddr6, AF_INET6, "beef::1", 80);
-    
-    scan_socket_addr_from_ip((struct sockaddr*)&saddr6, SCAN_FAMILY_INET6, "0123:4567:89ab:cdef:0123:4567:89ab:cdef", 12345);
-    check_saddr((struct sockaddr*)&saddr6, AF_INET6, "123:4567:89ab:cdef:123:4567:89ab:cdef", 12345);
-    
+
+    scan_socket_addr_from_ip((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, "beef::1", 80);
+    check_saddr((struct sockaddr *)&saddr6, AF_INET6, "beef::1", 80);
+
+    scan_socket_addr_from_ip((struct sockaddr *)&saddr6, SCAN_FAMILY_INET6, "0123:4567:89ab:cdef:0123:4567:89ab:cdef", 12345);
+    check_saddr((struct sockaddr *)&saddr6, AF_INET6, "123:4567:89ab:cdef:123:4567:89ab:cdef", 12345);
+
     return MUNIT_OK;
 }
 
 // int main (int argc, char **argv){
-// 
+//
 //     g_test_init(&argc, &argv, NULL);
 //     if(!g_test_verbose())
 //         g_log_set_handler(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO, nm_log_dummy, NULL);
-// 
+//
 //     g_test_add_func("/scan/subnet_range", test_subnet_range);
 //     g_test_add_func("/scan/util_hw_address", test_util_hw_address);
 //     g_test_add_func("/scan/scan_thread", test_scan_thread);
@@ -189,13 +197,13 @@ MunitResult test_socket_new_addr(MUNIT_ARGS){
 // }
 
 
-MUNIT_TESTS(tests, 
-    MUNIT_TEST("subnet_range", test_subnet_range)
-    MUNIT_TEST("socket_set_saddr", test_socket_set_saddr)
-    MUNIT_TEST("socket_new_addr", test_socket_new_addr)
+MUNIT_TESTS(tests,
+            MUNIT_TEST("subnet_range", test_subnet_range)
+            MUNIT_TEST("socket_set_saddr", test_socket_set_saddr)
+            MUNIT_TEST("socket_new_addr", test_socket_new_addr)
 //    MUNIT_TEST("util_hw_address", test_util_hw_address)
 //    MUNIT_TEST("scan_thread", test_scan_thread)
-);
+           );
 
 MUNIT_SUITE(suite, "/scan/", tests);
 MUNIT_MAIN(suite);

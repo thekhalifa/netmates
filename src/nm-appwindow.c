@@ -1,28 +1,29 @@
 #include "nm-appwindow.h"
 
 static nm_window window = {
-        .icons[HOST_TYPE_UNKNOWN] =     {"help-browser","Unknown device type"},
-        .icons[HOST_TYPE_LOCALHOST] =   {"mark-location","localhost"},
-        .icons[HOST_TYPE_ROUTER] =      {"modem","router or gateway device"},
-        .icons[HOST_TYPE_PHONE] =       {"phone","smart phone"},
-        .icons[HOST_TYPE_PRINTER] =     {"printer","printer or print sharing device"},
-        //.icons[HOST_TYPE_DEVICE] =      {"cpu","smart device"},
-        .icons[HOST_TYPE_DEVICE] =      {"uninterruptible-power-supply","smart device"},
-        .icons[HOST_TYPE_TV] =          {"tv","smart TV or streaming device"},
-        .icons[HOST_TYPE_PC] =          {"computer","PC or server"},
-        .icons[HOST_TYPE_PC_MAC] =      {"computer","Mac computer"},
-        .icons[HOST_TYPE_PC_WIN] =      {"computer","Windows computer"},
-        .icons[HOST_TYPE_ANY] =         {"computer","Other device"},
-        .icons[HOST_TYPE_KNOWN] =       {"network-wired","Previously seen device, not response"},
+    .icons[HOST_TYPE_UNKNOWN] =     {"help-browser", "Unknown device type"},
+    .icons[HOST_TYPE_LOCALHOST] =   {"mark-location", "localhost"},
+    .icons[HOST_TYPE_ROUTER] =      {"modem", "router or gateway device"},
+    .icons[HOST_TYPE_PHONE] =       {"phone", "smart phone"},
+    .icons[HOST_TYPE_PRINTER] =     {"printer", "printer or print sharing device"},
+    //.icons[HOST_TYPE_DEVICE] =      {"cpu","smart device"},
+    .icons[HOST_TYPE_DEVICE] =      {"uninterruptible-power-supply", "smart device"},
+    .icons[HOST_TYPE_TV] =          {"tv", "smart TV or streaming device"},
+    .icons[HOST_TYPE_PC] =          {"computer", "PC or server"},
+    .icons[HOST_TYPE_PC_MAC] =      {"computer", "Mac computer"},
+    .icons[HOST_TYPE_PC_WIN] =      {"computer", "Windows computer"},
+    .icons[HOST_TYPE_ANY] =         {"computer", "Other device"},
+    .icons[HOST_TYPE_KNOWN] =       {"network-wired", "Previously seen device, not response"},
 };
 
 
-static char * create_title_label(nm_host *host){
+static char *create_title_label(nm_host *host)
+{
     static const char *title_format = "<span foreground=\"#338E5E\" size=\"larger\"><b>%s</b></span>";
-    static const char *ipv4_format =        "\n<tt><small>inet:   %s</small></tt>";
-    static const char *ipv6_format =        "\n<tt><small>inet6:  %s</small></tt>";
-    static const char *hw_format =          "\n<tt><small>link:   %s</small></tt>";
-    static const char *hwv_format =         "\n<tt><small>vendor: %s</small></tt>";
+    static const char *ipv4_format  = "\n<tt><small>inet:   %s</small></tt>";
+    static const char *ipv6_format  = "\n<tt><small>inet6:  %s</small></tt>";
+    static const char *hw_format    = "\n<tt><small>link:   %s</small></tt>";
+    static const char *hwv_format   = "\n<tt><small>vendor: %s</small></tt>";
     char buffer[1024];
     int position = 0;
 
@@ -30,31 +31,32 @@ static char * create_title_label(nm_host *host){
     position += sprintf(buffer, title_format, nm_host_label(host));
 
     //Details
-    if(host->ip)
+    if (host->ip)
         position += sprintf(buffer + position, ipv4_format, host->ip);
     nm_list_foreach(n, host->list_ip)
-        position += sprintf(buffer + position, ipv4_format, n->data);
-    if(host->ip6)
+    position += sprintf(buffer + position, ipv4_format, n->data);
+    if (host->ip6)
         position += sprintf(buffer + position, ipv6_format, host->ip6);
     nm_list_foreach(n, host->list_ip6)
-        position += sprintf(buffer + position, ipv6_format, n->data);
+    position += sprintf(buffer + position, ipv6_format, n->data);
 
-    if(host->hw_if.addr)
+    if (host->hw_if.addr)
         position += sprintf(buffer + position, hw_format, host->hw_if.addr);
-    if(host->hw_if.vendor)
+    if (host->hw_if.vendor)
         position += sprintf(buffer + position, hwv_format, host->hw_if.vendor);
-    nm_list_foreach(n, host->list_hw_if){
+    nm_list_foreach(n, host->list_hw_if) {
         hw_details *hwif = n->data;
         position += sprintf(buffer + position, ipv4_format, hwif->addr);
-        if(hwif->vendor)
+        if (hwif->vendor)
             position += sprintf(buffer + position, hwv_format, hwif->vendor);
-        
+
     }
 
     return g_strdup(buffer);
 }
 
-static char * create_tooltip(nm_host *host){
+static char *create_tooltip(nm_host *host)
+{
     static const char *hostname_format = "Hostname: %s";
     static const char *detail_start_format = "<tt><small>";
     static const char *ipv4_format =        "\nipv4:     %s";
@@ -69,37 +71,37 @@ static char * create_tooltip(nm_host *host){
     char *pointer = buffer;
 
     pointer = stpcpy(buffer, detail_start_format);
-    if(host->hostname)
+    if (host->hostname)
         pointer += sprintf(pointer, hostname_format, host->hostname);
 
-    if(host->ip)
+    if (host->ip)
         pointer += sprintf(pointer, ipv4_format, host->ip);
     nm_list_foreach(n, host->list_ip)
-        pointer += sprintf(pointer, ipv4_format, n->data);
+    pointer += sprintf(pointer, ipv4_format, n->data);
 
-    if(host->ip6)
+    if (host->ip6)
         pointer += sprintf(pointer, ipv6_format, host->ip6);
     nm_list_foreach(n, host->list_ip6)
-        pointer += sprintf(pointer, ipv6_format, n->data);
+    pointer += sprintf(pointer, ipv6_format, n->data);
 
-    if(host->hw_if.addr)
+    if (host->hw_if.addr)
         pointer += sprintf(pointer, hw_format, host->hw_if.addr);
-    if(host->hw_if.vendor)
+    if (host->hw_if.vendor)
         pointer += sprintf(pointer, hwv_format, host->hw_if.vendor);
 
-    if(host->list_services)
+    if (host->list_services)
         pointer = stpcpy(pointer, services_heading);
     nm_list_foreach(n, host->list_services) {
-        pointer += sprintf(pointer, "%s", (char*)n->data);
-        if(n->next)
+        pointer += sprintf(pointer, "%s", (char *)n->data);
+        if (n->next)
             pointer += sprintf(pointer, ", ");
     }
-        
-    if(host->list_ports)
+
+    if (host->list_ports)
         pointer = stpcpy(pointer, ports_heading);
     nm_list_foreach(n, host->list_ports) {
-        pointer += sprintf(pointer, "%s", (char*)n->data);
-        if(n->next)
+        pointer += sprintf(pointer, "%s", (char *)n->data);
+        if (n->next)
             pointer += sprintf(pointer, ", ");
     }
 
@@ -108,21 +110,22 @@ static char * create_tooltip(nm_host *host){
 }
 
 
-void create_services_tags(GtkWidget *flow_box, nm_host *host) {
+void create_services_tags(GtkWidget *flow_box, nm_host *host)
+{
     g_assert(flow_box != NULL && host != NULL);
-    
+
     static const char *tag_format = "<span font_weight='light' size='smaller'>%s</span>";
     char tagbuff[128];
     GtkWidget *flow_child;
     GtkWidget *label;
-    
+
     nm_list_foreach(n, host->list_services) {
-        
+
         sprintf(tagbuff, tag_format, n->data);
         label = gtk_label_new(tagbuff);
         gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
         gtk_widget_set_tooltip_text(label, n->data);
-        
+
         flow_child = gtk_flow_box_child_new();
         GtkStyleContext *sc = gtk_widget_get_style_context(flow_child);
         gtk_style_context_add_class(sc, "nm-tag-container"); //"rubberband"
@@ -132,8 +135,9 @@ void create_services_tags(GtkWidget *flow_box, nm_host *host) {
 }
 
 
-static GtkWidget *list_create_list_row(nm_host *host){
-    
+static GtkWidget *list_create_list_row(nm_host *host)
+{
+
     //left side image
     char *icon = window.icons[host->type].icon;
     char *icon_tip = window.icons[host->type].description;
@@ -175,14 +179,14 @@ static GtkWidget *list_create_list_row(nm_host *host){
     gtk_orientable_set_orientation(GTK_ORIENTABLE(flow_box), GTK_ORIENTATION_VERTICAL);
     create_services_tags(flow_box, host);
 
-    GtkWidget* mid_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkWidget *mid_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_start(GTK_BOX(mid_box), host_label, TRUE, TRUE, 0);
     gtk_box_pack_end(GTK_BOX(mid_box), flow_box, FALSE, TRUE, 0);
-    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 5);
     gtk_box_pack_start(GTK_BOX(box), mid_box, TRUE, TRUE, 5);
     //gtk_widget_set_size_request(box, -1, 80);
-    
+
     GtkWidget *listboxrow = gtk_list_box_row_new();
     gtk_list_box_row_set_activatable(GTK_LIST_BOX_ROW(listboxrow), false);
     gtk_container_add(GTK_CONTAINER(listboxrow), box);
@@ -190,68 +194,77 @@ static GtkWidget *list_create_list_row(nm_host *host){
     return listboxrow;
 }
 
-void list_box_add_host(nm_host *host) {
+void list_box_add_host(nm_host *host)
+{
     assert(window.listbox != NULL);
     gtk_container_add(GTK_CONTAINER(window.listbox), list_create_list_row(host));
 }
 
-void list_box_clear() {
+void list_box_clear()
+{
     assert(window.listbox != NULL);
     GList *n = gtk_container_get_children(GTK_CONTAINER(window.listbox));
-    for(; n; n = n->next){
+    for (; n; n = n->next) {
         gtk_widget_destroy(GTK_WIDGET(n->data));
     }
 }
 
-void set_options_from_scan() {
+void set_options_from_scan()
+{
     scan_state *state = scan_getstate();
-    gtk_switch_set_state (window.known_hosts, state->opt_known_only);
-    gtk_switch_set_state (window.scan_all, state->opt_scan_all);
-    gtk_spin_button_set_value (window.scan_timeout, (float)state->opt_scan_timeout_ms / 1000);       
+    gtk_switch_set_state(window.known_hosts, state->opt_known_only);
+    gtk_switch_set_state(window.scan_all, state->opt_scan_all);
+    gtk_spin_button_set_value(window.scan_timeout, (float)state->opt_scan_timeout_ms / 1000);
 }
 
-void set_scan_from_options() {
+void set_scan_from_options()
+{
     scan_state *state = scan_getstate();
-    state->opt_known_only = gtk_switch_get_state (window.known_hosts);
-    state->opt_scan_all = gtk_switch_get_state (window.scan_all);
-    state->opt_scan_timeout_ms = (int)gtk_spin_button_get_value (window.scan_timeout) * 1000;
+    state->opt_known_only = gtk_switch_get_state(window.known_hosts);
+    state->opt_scan_all = gtk_switch_get_state(window.scan_all);
+    state->opt_scan_timeout_ms = (int)gtk_spin_button_get_value(window.scan_timeout) * 1000;
 }
 
-void show_scan_started() {
+void show_scan_started()
+{
     gtk_spinner_start(GTK_SPINNER(window.spinner));
     gtk_widget_show(window.spinner);
     gtk_widget_hide(window.refresh_button);
 }
 
-void show_scan_ended() {
+void show_scan_ended()
+{
     gtk_spinner_stop(GTK_SPINNER(window.spinner));
     gtk_widget_hide(window.spinner);
     gtk_widget_show(window.refresh_button);
 }
 
-gboolean refresh_results(gpointer data) {
+gboolean refresh_results(gpointer data)
+{
 
     list_box_clear();
-    
+
     scan_state *state = scan_getstate();
     nm_list_foreach(h, state->hosts)
-        list_box_add_host(h->data);
+    list_box_add_host(h->data);
 
     show_scan_ended();
     return FALSE;
 }
 
-gpointer refresh_thread(gpointer data) {
+gpointer refresh_thread(gpointer data)
+{
 
     scan_start();
     scan_stop();
-    g_idle_add (refresh_results, NULL);
+    g_idle_add(refresh_results, NULL);
     return NULL;
 }
 
 
 
-void refresh_hosts() {
+void refresh_hosts()
+{
 
     show_scan_started();
     set_scan_from_options();
@@ -259,7 +272,7 @@ void refresh_hosts() {
     GThread *thread;
     GError *error;
     thread = g_thread_try_new("ScanThread", refresh_thread, 0, &error);
-    if(error == NULL){
+    if (error == NULL) {
         puts("Error starting the scan thread");
         return;
     }
@@ -267,7 +280,8 @@ void refresh_hosts() {
 }
 
 
-void refresh_hosts_initial() {
+void refresh_hosts_initial()
+{
 
     scan_state *state = scan_getstate();
     bool prev_known = state->opt_known_only;
@@ -276,23 +290,26 @@ void refresh_hosts_initial() {
     scan_start();
     scan_stop();
     nm_list_foreach(h, state->hosts)
-        list_box_add_host(h->data);
+    list_box_add_host(h->data);
 
     show_scan_ended();
     state->opt_known_only = prev_known;
-    if(!state->opt_known_only)
+    if (!state->opt_known_only)
         refresh_hosts();
 }
 
-void on_refresh_clicked(GtkWidget *widget, gpointer user_data){
+void on_refresh_clicked(GtkWidget *widget, gpointer user_data)
+{
     refresh_hosts();
 }
 
-void on_window_destroyed(GtkWidget *widget, gpointer user_data){
+void on_window_destroyed(GtkWidget *widget, gpointer user_data)
+{
     scan_stop();
 }
 
-void on_app_activate(GtkApplication *gtkapp, gpointer should_run){
+void on_app_activate(GtkApplication *gtkapp, gpointer should_run)
+{
 
     window.gtk_app = gtkapp;
     window.builder = gtk_builder_new_from_resource(NM_RESOURCE_BASE NM_APPLICATION_UI_FILE);
@@ -323,25 +340,26 @@ void on_app_activate(GtkApplication *gtkapp, gpointer should_run){
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_resource(provider, NM_RESOURCE_BASE NM_APPLICATION_CSS_FILE);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider),
-                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
     //gtk_widget_set_size_request(GTK_WIDGET(window.window), 200, 400);
     //gtk_window_set_default_size(window.window, 200, 500);
     gtk_application_add_window(window.gtk_app, GTK_WINDOW(window.window));
-    gtk_widget_show_all (GTK_WIDGET(window.window_widget));
+    gtk_widget_show_all(GTK_WIDGET(window.window_widget));
     gtk_widget_hide(window.spinner);
-    
-    if(should_run) {
+
+    if (should_run) {
         set_options_from_scan();
         refresh_hosts_initial();
     }
 }
 
-int init_application(int argc, char **argv){
+int init_application(int argc, char **argv)
+{
     gint status;
-    
+
     log_set_level(LOG_ERROR);
-    
+
     scan_state *state = scan_getstate();
     state->opt_print = false;
     state->opt_known_only = false;
@@ -357,11 +375,11 @@ int init_application(int argc, char **argv){
 
     scan_init();
 
-    GtkApplication *gtk_app = gtk_application_new (NM_GUI_APP_NAME, G_APPLICATION_FLAGS_NONE);
-    g_signal_connect (gtk_app, "activate", G_CALLBACK (on_app_activate), (void*)true);
-    status = g_application_run (G_APPLICATION (gtk_app), argc, argv);
-    
+    GtkApplication *gtk_app = gtk_application_new(NM_GUI_APP_NAME, G_APPLICATION_FLAGS_NONE);
+    g_signal_connect(gtk_app, "activate", G_CALLBACK(on_app_activate), (void *)true);
+    status = g_application_run(G_APPLICATION(gtk_app), argc, argv);
+
     scan_destroy();
-    g_object_unref (gtk_app);
+    g_object_unref(gtk_app);
     return status;
 }

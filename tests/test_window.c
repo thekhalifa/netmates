@@ -1,13 +1,15 @@
 #include "nm-appwindow.h"
 
 
-void nm_log_dummy(const char *log_domain, int log_level, const char *message, void *user_data){
+void nm_log_dummy(const char *log_domain, int log_level, const char *message, void *user_data)
+{
     //do nothing.
 }
 
-void window_basic_on_activate(GtkApplication *gtkapp, gpointer user_data){
-    
-    on_app_activate(gtkapp, (void*)false);
+void window_basic_on_activate(GtkApplication *gtkapp, gpointer user_data)
+{
+
+    on_app_activate(gtkapp, (void *)false);
 
     nm_host *host;
 
@@ -78,7 +80,7 @@ void window_basic_on_activate(GtkApplication *gtkapp, gpointer user_data){
 }
 /*
 void window_update_on_activate(GtkApplication *gtkapp, gpointer user_data){
-    
+
     on_app_activate(gtkapp, user_data);
 
     nm_host *host;
@@ -112,11 +114,12 @@ void window_update_on_activate(GtkApplication *gtkapp, gpointer user_data){
 
 }*/
 
-void test_window_basic(void) {
-    GtkApplication *app = gtk_application_new ("ak.Network_List", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect (app, "activate", G_CALLBACK (window_basic_on_activate), NULL);
+void test_window_basic(void)
+{
+    GtkApplication *app = gtk_application_new("ak.Network_List", G_APPLICATION_FLAGS_NONE);
+    g_signal_connect(app, "activate", G_CALLBACK(window_basic_on_activate), NULL);
     g_assert_false(g_application_run(G_APPLICATION(app), 0, NULL));
-    g_object_unref (app);
+    g_object_unref(app);
 }
 
 /*
@@ -129,10 +132,11 @@ void test_window_update(void) {
 
 
 
-int main (int argc, char **argv){
+int main(int argc, char **argv)
+{
 
     g_test_init(&argc, &argv, NULL);
-    if(!g_test_verbose())
+    if (!g_test_verbose())
         g_log_set_handler(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO, nm_log_dummy, NULL);
 
     g_test_add_func("/window/basic", test_window_basic);

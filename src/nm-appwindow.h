@@ -16,7 +16,7 @@
 struct icon_def {
     char *icon;
     char *description;
-} ;
+};
 
 typedef struct {
     GtkApplication *gtk_app;

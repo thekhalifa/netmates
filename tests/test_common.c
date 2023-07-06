@@ -3,8 +3,8 @@
 #include "nm-common.h"
 
 
-MunitResult test_time_ms(MUNIT_ARGS) {
-
+MunitResult test_time_ms(MUNIT_ARGS)
+{
     munit_assert_uint(nm_time_ms(), >, 0);
     munit_assert_uint(nm_time_ms_diff(0), >, 0);
 
@@ -12,15 +12,15 @@ MunitResult test_time_ms(MUNIT_ARGS) {
     start = nm_time_ms();
     usleep(2000);
     end = nm_time_ms();
-    munit_logf(MUNIT_LOG_INFO, "\ttest_util_time: start: %lu ms, end: %lu ms, diff: %lu ms", start, end, end-start);
-    munit_assert_uint(end-start, >, 1);
-    munit_assert_uint(end-start, <=, 3);
+    munit_logf(MUNIT_LOG_INFO, "\ttest_util_time: start: %lu ms, end: %lu ms, diff: %lu ms", start, end, end - start);
+    munit_assert_uint(end - start, >, 1);
+    munit_assert_uint(end - start, <=, 3);
 
     start = nm_time_ms();
     usleep(20000);
     end = nm_time_ms();
-    munit_assert_uint(end-start, >, 19);
-    munit_assert_uint(end-start, <=, 21);
+    munit_assert_uint(end - start, >, 19);
+    munit_assert_uint(end - start, <=, 21);
 
     start = nm_time_ms();
     usleep(25000);
@@ -31,8 +31,8 @@ MunitResult test_time_ms(MUNIT_ARGS) {
     return MUNIT_OK;
 }
 
-MunitResult test_string_extract_token(MUNIT_ARGS) {
-
+MunitResult test_string_extract_token(MUNIT_ARGS)
+{
     char string1[64];
     strcpy(string1, "String With Spaces");
     munit_assert_string_equal(nm_string_extract_token(string1, ' ', 2), "Spaces");
@@ -61,8 +61,8 @@ MunitResult test_string_extract_token(MUNIT_ARGS) {
 }
 
 
-MunitResult test_string_count_lines(MUNIT_ARGS) {
-
+MunitResult test_string_count_lines(MUNIT_ARGS)
+{
     char *lines1 = "";
     char *lines2 = "\n";
     char *lines3 = "Abcd\n";
@@ -85,8 +85,8 @@ MunitResult test_string_count_lines(MUNIT_ARGS) {
 }
 
 
-MunitResult test_string_copy_line(MUNIT_ARGS) {
-
+MunitResult test_string_copy_line(MUNIT_ARGS)
+{
     char *lines1 = "";
     char *lines2 = "\n";
     char *lines3 = "Abcd\n";
@@ -117,9 +117,8 @@ MunitResult test_string_copy_line(MUNIT_ARGS) {
 }
 
 
-MunitResult test_list_add(MUNIT_ARGS) {
-
-    
+MunitResult test_list_add(MUNIT_ARGS)
+{
     char *str1 = "Test String";
     nmlist *list1 = nm_list_add(NULL, str1);
     munit_assert_not_null(list1);
@@ -127,20 +126,20 @@ MunitResult test_list_add(MUNIT_ARGS) {
     munit_assert_string_equal(list1->data, str1);
     munit_assert_null(list1->next);
     munit_assert_null(list1->prev);
-    
+
     char *str2 = "Different String";
     nmlist *list2 = nm_list_add(list1, str2);
     munit_assert_not_null(list2);
     munit_assert_ptr(list1, ==, list2);
     munit_assert_not_null(list2->next->data);
     munit_assert_string_equal(list2->next->data, str2);
-    
+
 
     return MUNIT_OK;
 }
 
-MunitResult test_list_free(MUNIT_ARGS) {
-
+MunitResult test_list_free(MUNIT_ARGS)
+{
     char *str1 = strdup("new string 1");
     nmlist *list1 = nm_list_add(NULL, str1);
     char *str2 = strdup("new string 2");
@@ -153,14 +152,14 @@ MunitResult test_list_free(MUNIT_ARGS) {
     munit_assert_not_null(list3);
 
     nm_list_free(list3, true);
-    
+
     munit_assert_not_null(list1);
     munit_assert_not_null(list2);
     munit_assert_null(list3->prev);
     munit_assert_null(list2->prev);
     munit_assert_null(list2->next);
     munit_assert_null(list3->data);
-    
+
     nm_list_free(list1, true);
 //     munit_assert_null(list1->data);
 //     munit_assert_null(list2->data);
@@ -171,21 +170,21 @@ MunitResult test_list_free(MUNIT_ARGS) {
 //     nm_list_free(list4, false);
 //     munit_assert_true(list4->data == str4);
 //     munit_assert_string_equal(str4, "static text");
-    
+
 
     return MUNIT_OK;
 }
 
-MunitResult test_list_find(MUNIT_ARGS) {
-
+MunitResult test_list_find(MUNIT_ARGS)
+{
     char *str1 = "new string 1";
     char *str2 = "new string 2";
     char *str3 = "new";
-    
+
     nmlist *list1 = nm_list_add(NULL, str1);
     nmlist *list2 = nm_list_add(list1, str2);
     nmlist *list3 = nm_list_add(list1, str3);
-    
+
     nmlist *f1 = nm_list_find_string(list1, str1);
     munit_assert_ptr_equal(f1, list1);
     nmlist *f2 = nm_list_find_string(list1, str2);
@@ -197,23 +196,23 @@ MunitResult test_list_find(MUNIT_ARGS) {
 
     munit_assert_not_null(nm_list_find_string(list3, str1));
     munit_assert_not_null(nm_list_find_string(list3, str2));
-    
+
 
 
     nm_list_free(list1, false);
-    
+
 
 
     return MUNIT_OK;
 }
 
 
-MunitResult test_list_all(MUNIT_ARGS) {
-
+MunitResult test_list_all(MUNIT_ARGS)
+{
     nmlist *list1 = NULL;
     munit_assert_null(list1);
     munit_assert_int(nm_list_len(list1), ==, 0);
-    
+
     char *str2 = strdup("Test String");
     nmlist *list2 = nm_list_add(NULL, str2);
     munit_assert_int(nm_list_len(list2), ==, 1);
@@ -228,8 +227,8 @@ MunitResult test_list_all(MUNIT_ARGS) {
 }
 
 
-MunitResult test_util_hw_address(MUNIT_ARGS){
-
+MunitResult test_util_hw_address(MUNIT_ARGS)
+{
     // check binary address -> string
     char big_buffer[64];
     unsigned char mac1[] = {0xab, 0xbc, 0xcd, 0xde, 0xef, 0xff};
@@ -270,27 +269,27 @@ MunitResult test_util_hw_address(MUNIT_ARGS){
 }
 
 
-MunitResult test_log_trace_bytes(MUNIT_ARGS){
-
+MunitResult test_log_trace_bytes(MUNIT_ARGS)
+{
     unsigned char mac1[] = {0xab, 0xbc, 0xcd, 0xde, 0xef, 0xff};
     size_t len = 6;
-    
+
     log_set_level(LOG_WARN);
     nm_log_trace_bytes("test_log_trace_bytes1", mac1, len);
-    
+
     log_set_level(LOG_TRACE);
     nm_log_trace_bytes("test_log_trace_bytes2", mac1, len);
-    
+
     munit_assert_true(1);
-    
+
     uint8_t buffer2[] = {
-    0x12,  '4', 0x84, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x09,  '_',  's',  'e',         //000f
-     'r',  'v',  'i',  'c',  'e',  's', 0x07,  '_',  'd',  'n',  's',  '-',  's',  'd', 0x04,  '_',         //001f
-     'u',  'd',  'p', 0x05,  'l',  'o',  'c',  'a',  'l', 0x00, 0x00, 0x0C, 0x80, 0x01, 0xC0, 0x0C,         //002f
-    0x00, 0x0C, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x0C, 0x04,  '_',  's',  'm',  'b', 0x04,         //003f
-     '_',  't',  'c',  'p', 0xC0,  '#', 0xC0, 0x0C, 0x00, 0x0C, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0A,         //004f
-    0x00, 0x0F, 0x0C,  '_',  'd',  'e',  'v',  'i',  'c',  'e',  '-',  'i',  'n',  'f',  'o', 0xC0,         //005f
-     '?', 
+        0x12,  '4', 0x84, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x09,  '_',  's',  'e',         //000f
+        'r',  'v',  'i',  'c',  'e',  's', 0x07,  '_',  'd',  'n',  's',  '-',  's',  'd', 0x04,  '_',         //001f
+        'u',  'd',  'p', 0x05,  'l',  'o',  'c',  'a',  'l', 0x00, 0x00, 0x0C, 0x80, 0x01, 0xC0, 0x0C,         //002f
+        0x00, 0x0C, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x0C, 0x04,  '_',  's',  'm',  'b', 0x04,         //003f
+        '_',  't',  'c',  'p', 0xC0,  '#', 0xC0, 0x0C, 0x00, 0x0C, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0A,         //004f
+        0x00, 0x0F, 0x0C,  '_',  'd',  'e',  'v',  'i',  'c',  'e',  '-',  'i',  'n',  'f',  'o', 0xC0,         //005f
+        '?',
     };
 
     nm_log_trace_bytes("test_log_trace_bytes3", buffer2, sizeof(buffer2));
@@ -299,20 +298,20 @@ MunitResult test_log_trace_bytes(MUNIT_ARGS){
 }
 
 
-MunitResult test_path_string(MUNIT_ARGS){
-    
+MunitResult test_path_string(MUNIT_ARGS)
+{
     char pathbuff[512];
     setenv("HOME", "/home/testuser12", 1);
 
     munit_assert_ptr_equal(nm_path_string("/home/user/dir1", pathbuff), pathbuff);
     munit_assert_string_equal(pathbuff, "/home/user/dir1");
-    
+
     munit_assert_ptr_equal(nm_path_string("/home/user/dir1/and file name /something - with hyphen", pathbuff), pathbuff);
     munit_assert_string_equal(pathbuff, "/home/user/dir1/and file name /something - with hyphen");
 
     munit_assert_ptr_equal(nm_path_string("~/dir2", pathbuff), pathbuff);
     munit_assert_string_equal(pathbuff, "/home/testuser12/dir2");
-    
+
     munit_assert_ptr_equal(nm_path_string("~/dir1/and file name /something - with hyphen", pathbuff), pathbuff);
     munit_assert_string_equal(pathbuff, "/home/testuser12/dir1/and file name /something - with hyphen");
 
@@ -342,20 +341,19 @@ int main(int argc, char* const argv[]) {
 */
 
 
-MUNIT_TESTS(tests, 
-    MUNIT_TEST("time_ms", test_time_ms)
-    MUNIT_TEST("string_extract_token", test_string_extract_token)
-    MUNIT_TEST("string_count_lines", test_string_count_lines)
-    MUNIT_TEST("string_copy_line", test_string_copy_line)
-    MUNIT_TEST("list_add", test_list_add)
-    MUNIT_TEST("list_free", test_list_free)
-    MUNIT_TEST("list_find", test_list_find)
-    MUNIT_TEST("list_all", test_list_all)
-    MUNIT_TEST("util_hw_address", test_util_hw_address)
-    MUNIT_TEST("log_trace_bytes", test_log_trace_bytes)
-    MUNIT_TEST("path_string", test_path_string)
-
-);
+MUNIT_TESTS(tests,
+            MUNIT_TEST("time_ms", test_time_ms)
+            MUNIT_TEST("string_extract_token", test_string_extract_token)
+            MUNIT_TEST("string_count_lines", test_string_count_lines)
+            MUNIT_TEST("string_copy_line", test_string_copy_line)
+            MUNIT_TEST("list_add", test_list_add)
+            MUNIT_TEST("list_free", test_list_free)
+            MUNIT_TEST("list_find", test_list_find)
+            MUNIT_TEST("list_all", test_list_all)
+            MUNIT_TEST("util_hw_address", test_util_hw_address)
+            MUNIT_TEST("log_trace_bytes", test_log_trace_bytes)
+            MUNIT_TEST("path_string", test_path_string)
+           );
 
 MUNIT_SUITE(suite, "/common/", tests);
 MUNIT_MAIN(suite);

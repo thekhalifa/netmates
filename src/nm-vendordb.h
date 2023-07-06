@@ -35,7 +35,7 @@ typedef struct {
 
 int             vendor_db_init();
 int             vendor_db_destroy();
-const char *    vendor_db_query(const char *assigned);
+const char     *vendor_db_query(const char *assigned);
 
 
 #endif //NETWORK_MATES_NM_VENDORDB_H

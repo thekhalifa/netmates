@@ -5,7 +5,7 @@
 
 /* order of priority is lower number overrides the highs when a merge of
  * two hosts happens - except localhost  */
-enum nm_host_type{
+enum nm_host_type {
     HOST_TYPE_UNKNOWN = 0,
     HOST_TYPE_LOCALHOST,
     HOST_TYPE_ROUTER,
@@ -31,19 +31,19 @@ typedef struct hw_details hw_details;
 static hw_details HW_IFACE_NULL;
 
 static char *nm_host_type_labels[] = {
-        "?",
-        "local",
-        "router",
-        "phone",
-        "printer",
-        "device",
-        "tv",
-        "mac pc",
-        "win pc",
-        "pc",
-        "anything",
-        "known",
-        NULL
+    "?",
+    "local",
+    "router",
+    "phone",
+    "printer",
+    "device",
+    "tv",
+    "mac pc",
+    "win pc",
+    "pc",
+    "anything",
+    "known",
+    NULL
 };
 
 typedef struct {
@@ -53,7 +53,7 @@ typedef struct {
     char *ip6;
     char *netmask;
     char *hostname;
-    hw_details hw_if; 
+    hw_details hw_if;
     nmlist *list_ip;
     nmlist *list_ip6;
     nmlist *list_services;
@@ -66,7 +66,7 @@ typedef struct {
 nm_host    *nm_host_init(enum nm_host_type type);
 void        nm_host_destroy(nm_host *host);
 void        nm_host_set_type(nm_host *host, enum nm_host_type type);
-void        nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask, 
+void        nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask,
                                    hw_details hw_if, char *hostname);
 void        nm_host_add_service(nm_host *host, char *service);
 void        nm_host_add_services(nm_host *host, nmlist *services);
@@ -81,8 +81,8 @@ const char *nm_host_type(nm_host *host);
 nmlist     *nm_host_merge_in_list(nmlist *list, nm_host *newhost);
 void        nm_host_merge(nm_host *dst, nm_host *src);
 
-nmlist     *nm_host_merge_field(char **dest_field, char *src_field, 
-                                     nmlist *dest_list_field, nmlist *src_list_field);
+nmlist     *nm_host_merge_field(char **dest_field, char *src_field,
+                                nmlist *dest_list_field, nmlist *src_list_field);
 
 nmlist     *nm_host_sort_list(nmlist *list);
 

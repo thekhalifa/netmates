@@ -5,7 +5,8 @@
 #include "nm-host.h"
 
 
-MunitResult test_blank(MUNIT_ARGS){
+MunitResult test_blank(MUNIT_ARGS)
+{
     nm_host *entry = nm_host_init(HOST_TYPE_LOCALHOST);
     munit_assert_true(entry->type == HOST_TYPE_LOCALHOST);
     //munit_assert_uint(entry->ip_addr, ==, 0);
@@ -21,7 +22,8 @@ MunitResult test_blank(MUNIT_ARGS){
     return MUNIT_OK;
 }
 
-MunitResult test_basic(MUNIT_ARGS){
+MunitResult test_basic(MUNIT_ARGS)
+{
     nm_host *entry = nm_host_init(HOST_TYPE_LOCALHOST);
 
     char *ip = strdup("192.168.0.0");
@@ -89,7 +91,8 @@ MunitResult test_basic(MUNIT_ARGS){
     return MUNIT_OK;
 }
 
-MunitResult test_full_host(MUNIT_ARGS){
+MunitResult test_full_host(MUNIT_ARGS)
+{
     nm_host *host = nm_host_init(HOST_TYPE_LOCALHOST);
 
     char *ip = strdup("192.168.0.0");
@@ -147,9 +150,8 @@ MunitResult test_full_host(MUNIT_ARGS){
 }
 
 
-
-MunitResult test_sort_list(MUNIT_ARGS){
-
+MunitResult test_sort_list(MUNIT_ARGS)
+{
     nm_host *host;
     nmlist *list1;
     nmlist *result;
@@ -159,9 +161,9 @@ MunitResult test_sort_list(MUNIT_ARGS){
 
     result = nm_host_sort_list(list1);
     munit_assert_not_null(result);
-    munit_assert_int(((nm_host*)result->data)->type, ==, HOST_TYPE_LOCALHOST);
+    munit_assert_int(((nm_host *)result->data)->type, ==, HOST_TYPE_LOCALHOST);
     munit_assert_null(result->next);
-    
+
     host = nm_host_init(HOST_TYPE_PRINTER);
     nm_host_set_attributes(host, "200.2.2.2", NULL, NULL, HW_IFACE_NULL, NULL);
     nm_list_add(list1, host);
@@ -173,7 +175,7 @@ MunitResult test_sort_list(MUNIT_ARGS){
     host = nm_host_init(HOST_TYPE_DEVICE);
     nm_host_set_attributes(host, NULL, "fedo:dedo:bedo::1234", NULL, HW_IFACE_NULL, NULL);
     nm_list_add(list1, host);
-    
+
     host = nm_host_init(HOST_TYPE_DEVICE);
     nm_host_set_attributes(host, "0.0.0.0", NULL, NULL, HW_IFACE_NULL, NULL);
     nm_list_add(list1, host);
@@ -184,30 +186,30 @@ MunitResult test_sort_list(MUNIT_ARGS){
 
     result = nm_host_sort_list(list1);
     munit_assert_not_null(result);
-    host = (nm_host*)result->data;
+    host = (nm_host *)result->data;
     munit_assert_int(host->type, ==, HOST_TYPE_LOCALHOST);
 
-    host = (nm_host*)result->next->data;
+    host = (nm_host *)result->next->data;
     munit_assert_int(host->type, ==, HOST_TYPE_ROUTER);
     munit_assert_string_equal(host->ip, "192.168.0.1");
 
-    host = (nm_host*)result->next->next->data;
+    host = (nm_host *)result->next->next->data;
     munit_assert_int(host->type, ==, HOST_TYPE_DEVICE);
     munit_assert_string_equal(host->ip, "0.0.0.0");
 
-    host = (nm_host*)result->next->next->next->data;
+    host = (nm_host *)result->next->next->next->data;
     munit_assert_int(host->type, ==, HOST_TYPE_PC);
     munit_assert_string_equal(host->ip, "100.1.1.1");
 
-    host = (nm_host*)result->next->next->next->next->data;
+    host = (nm_host *)result->next->next->next->next->data;
     munit_assert_int(host->type, ==, HOST_TYPE_PRINTER);
     munit_assert_string_equal(host->ip, "200.2.2.2");
 
-    host = (nm_host*)result->next->next->next->next->next->data;
+    host = (nm_host *)result->next->next->next->next->next->data;
     munit_assert_int(host->type, ==, HOST_TYPE_DEVICE);
     munit_assert_null(host->ip);
     munit_assert_string_equal(host->ip6, "fedo:dedo:bedo::1234");
-    
+
     return MUNIT_OK;
 }
 
@@ -250,12 +252,12 @@ void test_other_field_leaks(void) {
 */
 
 
-MUNIT_TESTS(tests, 
-    MUNIT_TEST("blank", test_blank)
-    MUNIT_TEST("basic", test_basic)
-    MUNIT_TEST("full", test_full_host)
-    MUNIT_TEST("sort_list", test_sort_list)
-);
+MUNIT_TESTS(tests,
+            MUNIT_TEST("blank", test_blank)
+            MUNIT_TEST("basic", test_basic)
+            MUNIT_TEST("full", test_full_host)
+            MUNIT_TEST("sort_list", test_sort_list)
+           );
 
 MUNIT_SUITE(suite, "/host/", tests);
 MUNIT_MAIN(suite);

@@ -34,112 +34,116 @@ struct {
 };
 
 
-void print_version() {
+void print_version()
+{
     printf(""NM_APP_NAME" version "NM_APP_VERSION"\n");
 }
 
-void print_usage() {
+void print_usage()
+{
     printf("Usage: \n"
-    "\n"
-    "    "NM_APP_NAME" [options]\n"
-    "  \n"
-    "Options: \n"
-    "    -k, --known-only            show known hosts only, no scan\n"
-    "    -K, --known-first           show known hosts first then scan\n"
-    "    -s, --scan-only             show scan results only, no known hosts\n"
-    "    -S, --scan-all              scan using all methods even if host is live\n"
-    "    -n, --skip-resolve          skip resolving hosts and show numeric values\n"
-    "\n"
-    "    -t, --scan-timeout <N>      scan timeout in seconds\n"
-    "    -T, --connect-timeout <N>   connect scan timeout in milliseconds\n"
-    "    -c, --connect-threads <N>   number of connect threads. Set to 0 to skip connecting\n"
-    "    -l, --listen-threads <N>    number of listen threads. Set to 0 to skip listening\n"
-    "    -m, --max-hosts <N>         max number of host ipv4 to scan within the subnet\n"
-    "    -o, --subnet-offset <N>     offset the first host scan ipv4\n"
-    "\n"
-    "    -L, --list-format           print results as a list\n"
-    "    -g, --debug                 print debug messages\n"
-    "    -G, --trace                 print trace messages\n"
-    "    -v, --version               print version number and exit\n"
-    "    -h, --help                  help message (this one)\n"
-    "\n");
+           "\n"
+           "    "NM_APP_NAME" [options]\n"
+           "  \n"
+           "Options: \n"
+           "    -k, --known-only            show known hosts only, no scan\n"
+           "    -K, --known-first           show known hosts first then scan\n"
+           "    -s, --scan-only             show scan results only, no known hosts\n"
+           "    -S, --scan-all              scan using all methods even if host is live\n"
+           "    -n, --skip-resolve          skip resolving hosts and show numeric values\n"
+           "\n"
+           "    -t, --scan-timeout <N>      scan timeout in seconds\n"
+           "    -T, --connect-timeout <N>   connect scan timeout in milliseconds\n"
+           "    -c, --connect-threads <N>   number of connect threads. Set to 0 to skip connecting\n"
+           "    -l, --listen-threads <N>    number of listen threads. Set to 0 to skip listening\n"
+           "    -m, --max-hosts <N>         max number of host ipv4 to scan within the subnet\n"
+           "    -o, --subnet-offset <N>     offset the first host scan ipv4\n"
+           "\n"
+           "    -L, --list-format           print results as a list\n"
+           "    -g, --debug                 print debug messages\n"
+           "    -G, --trace                 print trace messages\n"
+           "    -v, --version               print version number and exit\n"
+           "    -h, --help                  help message (this one)\n"
+           "\n");
 }
 
-void exit_arg_error(char * arg, char *value) {
+void exit_arg_error(char *arg, char *value)
+{
     printf("Invalid value: %s for argument: %s\n\n", value, arg);
     exit(1);
 }
 
-void process_args(int argc, char *argv[]) {
+void process_args(int argc, char *argv[])
+{
     int argindex = 1;
-    
-    while(argindex < argc){
+
+    while (argindex < argc) {
         char *arg   = argv[argindex];
         char *argvalue = "";
 
-        if(argindex + 1 < argc){
+        if (argindex + 1 < argc) {
             argvalue = argv[argindex + 1];
         }
 
-        if(!strcmp(arg, "-h") || !strcmp(arg, "--help")){
+        if (!strcmp(arg, "-h") || !strcmp(arg, "--help")) {
             print_usage();
             exit(0);
-        }else if(!strcmp(arg, "-v") || !strcmp(arg, "--version")){
+        } else if (!strcmp(arg, "-v") || !strcmp(arg, "--version")) {
             print_version();
             exit(0);
-        }else if(!strcmp(arg, "-g") || !strcmp(arg, "--debug")){
+        } else if (!strcmp(arg, "-g") || !strcmp(arg, "--debug")) {
             log_set_level(LOG_DEBUG);
-        }else if(!strcmp(arg, "-G") || !strcmp(arg, "--trace")){
+        } else if (!strcmp(arg, "-G") || !strcmp(arg, "--trace")) {
             log_set_level(LOG_TRACE);
-        }else if(!strcmp(arg, "-L") || !strcmp(arg, "--list-format")){
+        } else if (!strcmp(arg, "-L") || !strcmp(arg, "--list-format")) {
             nm_app.arg_list_format = true;
-        }else if(!strcmp(arg, "-k") || !strcmp(arg, "--known-only")){
+        } else if (!strcmp(arg, "-k") || !strcmp(arg, "--known-only")) {
             nm_app.arg_known_only = true;
-        }else if(!strcmp(arg, "-K") || !strcmp(arg, "--known-first")){
+        } else if (!strcmp(arg, "-K") || !strcmp(arg, "--known-first")) {
             nm_app.arg_known_first = true;
-        }else if(!strcmp(arg, "-s") || !strcmp(arg, "--scan-only")){
+        } else if (!strcmp(arg, "-s") || !strcmp(arg, "--scan-only")) {
             nm_app.arg_scan_only = true;
-        }else if(!strcmp(arg, "-S") || !strcmp(arg, "--scan-all")){
+        } else if (!strcmp(arg, "-S") || !strcmp(arg, "--scan-all")) {
             nm_app.arg_scan_all = true;
-        }else if(!strcmp(arg, "-n") || !strcmp(arg, "--skip-resolve")){
+        } else if (!strcmp(arg, "-n") || !strcmp(arg, "--skip-resolve")) {
             nm_app.arg_skip_resolve = true;
-        }else if(!strcmp(arg, "-c") || !strcmp(arg, "--connect-threads")){
-            if(strlen(argvalue) > 0 && isdigit(argvalue[0]))
+        } else if (!strcmp(arg, "-c") || !strcmp(arg, "--connect-threads")) {
+            if (strlen(argvalue) > 0 && isdigit(argvalue[0]))
                 nm_app.arg_conn_threads = atoi(argvalue);
             else
                 exit_arg_error(arg, argvalue);
             argindex++;
-        }else if(!strcmp(arg, "-l") || !strcmp(arg, "--listen-threads")){
-            if(strlen(argvalue) > 0)
+        } else if (!strcmp(arg, "-l") || !strcmp(arg, "--listen-threads")) {
+            if (strlen(argvalue) > 0)
                 nm_app.arg_list_threads = atoi(argvalue);
             else
                 exit_arg_error(arg, argvalue);
             argindex++;
-        }else if(!strcmp(arg, "-t") || !strcmp(arg, "--scan-timeout")){
-            if(strlen(argvalue) > 0)
+        } else if (!strcmp(arg, "-t") || !strcmp(arg, "--scan-timeout")) {
+            if (strlen(argvalue) > 0)
                 nm_app.arg_scan_timeout = atoi(argvalue) * 1000;
             else
                 exit_arg_error(arg, argvalue);
             argindex++;
-        }else if(!strcmp(arg, "-T") || !strcmp(arg, "--connect-timeout")){
-            if(strlen(argvalue) > 0)
+        } else if (!strcmp(arg, "-T") || !strcmp(arg, "--connect-timeout")) {
+            if (strlen(argvalue) > 0)
                 nm_app.arg_conn_timeout = atoi(argvalue);
-            else 
+            else
                 exit_arg_error(arg, argvalue);
             argindex++;
-        }else if(!strcmp(arg, "-m") || !strcmp(arg, "--max-hosts")){
-            if(strlen(argvalue) > 0)
+        } else if (!strcmp(arg, "-m") || !strcmp(arg, "--max-hosts")) {
+            if (strlen(argvalue) > 0)
                 nm_app.arg_max_hosts = atoi(argvalue);
-            else 
+            else
                 exit_arg_error(arg, argvalue);
             argindex++;
-        }else if(!strcmp(arg, "-o") || !strcmp(arg, "--subnet-offset")){
-            if(strlen(argvalue) > 0)
+        } else if (!strcmp(arg, "-o") || !strcmp(arg, "--subnet-offset")) {
+            if (strlen(argvalue) > 0)
                 nm_app.arg_subnet_offset = atoi(argvalue);
-            else 
+            else
                 exit_arg_error(arg, argvalue);
             argindex++;
-        }else{
+        } else {
             printf("Invalid argument: %s\n\n", arg);
             exit(1);
         }
@@ -147,30 +151,32 @@ void process_args(int argc, char *argv[]) {
     }
 }
 
-void signal_handler(int signum){
+void signal_handler(int signum)
+{
     psignal(signum, "Signal received, stopping scan and quitting.");
     scan_stop();
 }
 
-static void signal_setup(){
+static void signal_setup()
+{
     signal(SIGTERM, signal_handler);
     signal(SIGINT, signal_handler);
     return;
 }
 
-int init_application(int argc, char **argv){
-
+int init_application(int argc, char **argv)
+{
     log_set_level(nm_app.log_level);
     log_set_lock(nm_log_set_lock, NULL);
-    if(isatty(STDERR_FILENO))
+    if (isatty(STDERR_FILENO))
         log_set_colour(true);
-    if(isatty(STDOUT_FILENO))
+    if (isatty(STDOUT_FILENO))
         nm_enable_colour();
-    
+
 
     log_debug("Startup");
     process_args(argc, argv);
-    
+
     signal_setup();
 
     scan_state *state = scan_getstate();
@@ -187,7 +193,7 @@ int init_application(int argc, char **argv){
     state->opt_connect_threads = nm_app.arg_conn_threads;
     state->opt_connect_timeout_ms = nm_app.arg_conn_timeout;
     state->opt_listen_threads = nm_app.arg_list_threads;
-    
+
     scan_init();
     scan_start();
     scan_destroy();
@@ -195,7 +201,7 @@ int init_application(int argc, char **argv){
 
 }
 
-int main (int argc, char **argv){
+int main(int argc, char **argv)
+{
     return init_application(argc, argv);
-
 }
