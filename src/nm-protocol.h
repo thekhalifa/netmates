@@ -34,9 +34,8 @@ typedef struct proto_def {
 } proto_def;
 
 
-//rfc1035
 #define PROTO_DNS_CLASS_IN          1
-#define PROTO_DNS_CLASS_IN_UNICAST  0x8001  //rfc6762
+#define PROTO_DNS_CLASS_IN_UNICAST  0x8001
 #define PROTO_DNS_COMPRESS_MASK     0xC0
 enum proto_dns_type {
     PROTO_DNS_TYPE_A        = 1,

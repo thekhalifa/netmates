@@ -70,23 +70,6 @@ void nm_host_set_attributes(nm_host *host, char *ip, char *ip6, char *netmask,
         if (nm_string_len(hw_if.vendor))
             hwif->vendor = strdup(hw_if.vendor);
         host->list_hw_if = nm_list_add(host->list_hw_if, hwif);
-
-//     }else if(nm_string_len(hw_if.addr)){
-//         //replace addr with a longer string
-//         char addr[NM_MID_BUFFSIZE];
-//         snprintf(addr, NM_MID_BUFFSIZE, "%s, %s", host->hw_if.addr, hw_if.addr);
-//         free(host->hw_if.addr);
-//         host->hw_if.addr = strdup(addr);
-//
-//         if(nm_string_len(hw_if.vendor)) {
-//             char vendor[NM_MID_BUFFSIZE];
-//             snprintf(vendor, NM_MID_BUFFSIZE, "%s%s%s",
-//                     host->hw_if.vendor ? host->hw_if.vendor : "",
-//                     hw_if.vendor ? ", " : "",
-//                     hw_if.vendor ? hw_if.vendor : "");
-//             free(host->hw_if.vendor);
-//             host->hw_if.vendor = strdup(vendor);
-//         }
     }
 
     if (nm_string_len(netmask)) {
@@ -147,8 +130,6 @@ void nm_host_print_wide(nm_host *host)
 
     const char *type = nm_host_type_labels[host->type];
     char *hostname = host->hostname ? host->hostname : "";
-    //char *ip = host->ip ? host->ip : "";
-    //char *ip6 = host->ip6 ? host->ip6 : "";
     char *ip = host->ip ? host->ip : host->ip6;
     char *hwaddr = host->hw_if.addr ? host->hw_if.addr : "";
     char *hwvendor = host->hw_if.vendor ? host->hw_if.vendor : "";
@@ -164,7 +145,7 @@ void nm_host_print_wide(nm_host *host)
     nm_list_foreach(n, host->list_ip)
     printf("  %-8s\t%s%-20s%s\n", " ", nm_clr_strong, (char *)n->data, nm_clr_off);
 
-    //localhost can have both ip/ip6, print the second one
+    //in case of both ip & ip6, print the second one
     if (host->ip && host->ip6)
         printf("  %-8s\t%s%-20s%s\n", " ", nm_clr_strong, host->ip6, nm_clr_off);
     nm_list_foreach(n, host->list_ip6)
@@ -317,14 +298,11 @@ void nm_host_merge(nm_host *dst, nm_host *src)
         dst->hw_if.vendor = strdup(vendor);
     }
 
-    //ip
-    dst->list_ip = nm_host_merge_field(&dst->ip, src->ip, dst->list_ip, src->list_ip);
-    //ip6
-    dst->list_ip6 = nm_host_merge_field(&dst->ip6, src->ip6, dst->list_ip6, src->list_ip6);
-    //services
-    dst->list_services = nm_host_merge_field(NULL, NULL, dst->list_services, src->list_services);
-    //ports
-    dst->list_ports = nm_host_merge_field(NULL, NULL, dst->list_ports, src->list_ports);
+    //merge lists
+    dst->list_ip        = nm_host_merge_field(&dst->ip, src->ip, dst->list_ip, src->list_ip);
+    dst->list_ip6       = nm_host_merge_field(&dst->ip6, src->ip6, dst->list_ip6, src->list_ip6);
+    dst->list_services  = nm_host_merge_field(NULL, NULL, dst->list_services, src->list_services);
+    dst->list_ports     = nm_host_merge_field(NULL, NULL, dst->list_ports, src->list_ports);
 }
 
 
@@ -364,7 +342,6 @@ static int nm_host_sort_compare(const void *data1, const void *data2)
 {
     const nm_host *left = data1;
     const nm_host *right = data2;
-
 
     if (left->type == HOST_TYPE_LOCALHOST)
         return -1;

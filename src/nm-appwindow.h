@@ -1,5 +1,5 @@
-#ifndef NETWORK_MATES_NM_WINDOW_H
-#define NETWORK_MATES_NM_WINDOW_H
+#ifndef NETWORK_MATES_NM_APPWINDOW_H
+#define NETWORK_MATES_NM_APPWINDOW_H
 
 #include <gtk-3.0/gtk/gtk.h>
 
@@ -42,4 +42,4 @@ void on_app_activate(GtkApplication *gtkapp, gpointer should_run);
 
 int init_application(int argc, char **argv);
 
-#endif //NETWORK_MATES_NM_WINDOW_H
+#endif //NETWORK_MATES_NM_APPWINDOW_H

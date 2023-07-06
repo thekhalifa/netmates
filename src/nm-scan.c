@@ -18,6 +18,7 @@ static const scan_port scan_port_list[] = {
         .method = SCAN_UDP_SENDRECV, .port = 137, .service = "netbios-ns", .required = 1, .host_type = HOST_TYPE_PC,
         .query_payload = { .length = sizeof(PROTO_NBS_QUERY), .message = PROTO_NBS_QUERY }
     },
+    {   .method = SCAN_TCP_CONNECT, .port = 139, .service = "netbios-ssn", .required = 1, .host_type = HOST_TYPE_PC},
     {
         .method = SCAN_UDP_SENDRECV, .port = 53, .service = "dns", .required = 1, .host_type = HOST_TYPE_ROUTER,
         .query_cb = probe_dns_generate_query_targetptr, .protocol = &proto_dns_definition
@@ -62,16 +63,6 @@ static const scan_port scan_port_list[] = {
     {   .method = SCAN_TCP_CONNECT, .port = 2195, .service = "apns", .required = 0, .host_type = HOST_TYPE_PC_MAC},
     {   .method = SCAN_TCP_CONNECT, .port = 2196, .service = "apns", .required = 0, .host_type = HOST_TYPE_PC_MAC},
     {   .method = SCAN_TCP_CONNECT, .port = 2197, .service = "apns", .required = 0, .host_type = HOST_TYPE_PC_MAC},
-    /* unknown ports - */
-    //{.method = SCAN_UDP_SENDRECV, .port = 192, .service = "osu-nms", .required = 0, .host_type = HOST_TYPE_PC},
-    //Line Printer (LPR), Line Printer Daemon (LPD)
-    //{.method = SCAN_TCP_CONNECT, .port = 515, .service = "lpr", .required = 0, .host_type = HOST_TYPE_PRINTER},
-    //Real Time Streaming Protocol (RTSP), rfc 2326
-    //{.method = SCAN_TCP_CONNECT, .port = 554, .service = "rtsp", .required = 0, .host_type = HOST_TYPE_PC},
-    //NAT Port Mapping Protocol Announcements
-    //{.method = SCAN_UDP_SENDRECV, .port = 5350, .service = "nat-annouce", .required = 0, .host_type = HOST_TYPE_PC},
-    //NAT Port Mapping Protocol
-    //{.method = SCAN_UDP_SENDRECV, .port = 5351, .service = "nat-pmp", .required = 0, .host_type = HOST_TYPE_PC},
 };
 
 
@@ -212,17 +203,6 @@ bool scan_util_calc_subnet_range(const char *ip, const char *netmask, scan_range
     return true;
 }
 
-// scan_result *scan_result_init(enum scan_host_state resp, in_addr_t addr, uint16_t port) {
-//
-//     scan_result *result = malloc(sizeof(scan_result));
-//     memset(result, 0, sizeof(scan_result));
-//
-//     result->response = resp;
-//     result->target_addr.s_addr = addr;
-//     result->port = port;
-//     return result;
-// }
-
 void scan_result_destroy(scan_result *result)
 {
     if (result == NULL)
@@ -251,26 +231,6 @@ void scan_print_mates(nmlist *hosts, bool showtotal)
     if (showtotal)
         printf("\n%sTotal Network Mates: %d%s\n", nm_clr_light, numentries, nm_clr_off);
 }
-
-// int scan_resolve_hostname_from_inaddr(uint32_t ip_addr, char *hostname_buffer, size_t buffer_size) {
-//     assert(ip_addr != 0);
-//     assert(hostname_buffer != NULL);
-//
-//     char host[NM_HOST_STRLEN];
-//     char service[32];
-//     struct sockaddr_in addr;
-//
-//     addr.sin_port = 0;
-//     addr.sin_family = AF_INET;
-//     addr.sin_addr.s_addr = ip_addr;
-//     if(getnameinfo((struct sockaddr *) &addr,sizeof(addr), host, sizeof(host),
-//                    service, sizeof(service), NI_NUMERICSERV) != 0){
-//         return 0;
-//     }
-//     strncpy(hostname_buffer, host, buffer_size);
-//
-//     return 1;
-// }
 
 
 int scan_resolve_saddr_hostname(struct sockaddr *saddr, enum scan_family family, char *hostname_buffer, size_t buffer_size)
@@ -325,62 +285,14 @@ int scan_resolve_hostname_new(enum scan_family family, char *ip, char *hostname_
         }
     }
 
-    //if(strncmp(ip, host, strlen(ip) < sizeof(host) ? strlen(ip) : sizeof(host))){
     if (strncmp(ip, host, strlen(ip))) {
         strncpy(hostname_buffer, host, buffer_size);
         return 1;
     } else
         hostname_buffer[0] = 0;
-//     if(strncmp(ip, host, sizeof(host))){
-//         strncpy(hostname_buffer, host, buffer_size);
-//         return 1;
-//     }
+
     return 0;
 }
-
-
-// int scan_resolve_hostname(char *ip, char *hostname_buffer, size_t buffer_size) {
-//     assert(ip != NULL);
-//     assert(hostname_buffer != NULL);
-//
-//     char host[NM_HOST_STRLEN];
-//     char service[32];
-//     struct sockaddr_in addr;
-//     addr.sin_port = 0;
-//     addr.sin_family = AF_INET;
-//     addr.sin_addr.s_addr = inet_addr(ip);
-//     if(getnameinfo((struct sockaddr *) &addr,sizeof(addr), host, sizeof(host),
-//                    service, sizeof(service), NI_NUMERICSERV) != 0){
-//         return 0;
-//     }
-//     if(strncmp(ip, host, sizeof(host)) != 0){
-//         strncpy(hostname_buffer, host, buffer_size);
-//         return 1;
-//     }
-//     return 0;
-// }
-//
-// int scan_resolve_hostname6(char *ip, char *hostname_buffer, size_t buffer_size) {
-//     assert(ip != NULL);
-//     assert(hostname_buffer != NULL);
-//
-//     char host[NM_HOST_STRLEN];
-//     char service[32];
-//     struct sockaddr_in6 addr;
-//     addr.sin6_port = 0;
-//     addr.sin6_family = AF_INET6;
-//     inet_pton(AF_INET6, ip, &addr.sin6_addr);
-//     if(getnameinfo((struct sockaddr *) &addr,sizeof(addr), host, sizeof(host),
-//                    service, sizeof(service), NI_NUMERICSERV) != 0){
-//         return 0;
-//     }
-//     if(strncmp(ip, host, sizeof(host)) != 0){
-//         strncpy(hostname_buffer, host, buffer_size);
-//         return 1;
-//     }
-//     return 0;
-// }
-
 
 void scan_socket_log_ip(int sd)
 {
@@ -566,14 +478,10 @@ bool probe_send_proto_query(int sd, scan_port *sp, const char *logsign)
         bytes_sent = sendto(sd, buff, msgsize, 0, (const struct sockaddr *)&saddr, saddrsize);
         if (bytes_sent < 0) {
             log_debug("%s Could not send probe query, err %i, %s", logsign, errno, strerror(errno));
-            //scan_socket_log_saddr((struct sockaddr*)&saddr, logsign, "send_to");
-            //return false;
         }
         log_trace("%s Sent query with %li bytes", logsign, bytes_sent);
         query = query + 1;
         queries_sent++;
-        //TODO: remove me
-        break;
     }
 
     log_debug("%s probe_send_proto_query: sent %i queries", logsign, queries_sent);
@@ -705,8 +613,8 @@ int probe_sendrecv_udp(const char *thread_id, scan_result *result,
     // wait for response
     poll_arg.fd = sd;
     poll_arg.events = POLL_IN;
-
     poll_ret = poll(&poll_arg, 1, scan.opt_connect_timeout_ms);
+
     /* check poll result and socket state */
     if (poll_ret > 0 && poll_arg.revents & POLL_IN) {
         //poll has data from recvfrom
@@ -783,7 +691,6 @@ gpointer scan_main_listen_thread(gpointer data)
 {
     log_trace("scan_main_listen_thread starting");
     unsigned long start_time = nm_time_ms();
-
 
     int num_listen_ports = sizeof(scan_listen_list) / sizeof(scan_listen_list[0]);
     int num_results = 0, num_live = 0;
@@ -879,9 +786,6 @@ void scan_listen_thread(gpointer target_data, gpointer results_data)
     char querybuff[1024];
     uint16_t port_num, sender_port;
     struct pollfd poll_arg;
-//     struct sockaddr_in recv_addr4;
-//     struct sockaddr_in6 recv_addr6;
-//     struct sockaddr *recv_addr;
     proto_query *query;
     struct sockaddr_in6 recvaddr;
     socklen_t recv_saddrsize = sizeof(struct sockaddr_in6);
@@ -954,14 +858,6 @@ void scan_listen_thread(gpointer target_data, gpointer results_data)
     poll_arg.events = POLLIN;
     poll_arg.fd = sd;
     log_debug("%s Listening on port %hi", threadsign, port_num);
-//     //prepare recv_addr
-//     if(port_def->family == SCAN_FAMILY_INET4) {
-//         recv_addr = (struct sockaddr*)&recv_addr4;
-//         recv_saddrsize = sizeof(struct sockaddr_in);
-//     }else if(port_def->family == SCAN_FAMILY_INET6) {
-//         recv_addr = (struct sockaddr*)&recv_addr6;
-//         recv_saddrsize = sizeof(struct sockaddr_in6);
-//     }
 
     while (nm_time_ms_diff(thread_start) <= max_wait_time) {
         if (!scan_util_is_running())
@@ -984,24 +880,10 @@ void scan_listen_thread(gpointer target_data, gpointer results_data)
         if (recvaddr.sin6_family == AF_INET) {
             inet_ntop(AF_INET, &((struct sockaddr_in *)&recvaddr)->sin_addr, sender_ip, sizeof(sender_ip));
             sender_port = ntohs(((struct sockaddr_in *)&recvaddr)->sin_port);
-//             inet_ntop(recvaddr.sin6_family, (struct sockaddr*)&recvaddr, sender_ip, sizeof(sender_ip));
-//             sender_port = recvaddr.sin6_family == AF_INET ?
-//                     ntohs(((struct sockaddr_in*)&recvaddr)->sin_port) :
-//                     ntohs(recvaddr.sin6_port);
         } else {
             inet_ntop(AF_INET6, &recvaddr.sin6_addr, sender_ip, sizeof(sender_ip));
             sender_port = ntohs(recvaddr.sin6_port);
         }
-//         if(port_def->family == SCAN_FAMILY_INET6){
-//             inet_ntop(AF_INET6, &recv_addr6.sin6_addr, sender_ip, sizeof(sender_ip));
-//             sender_port = ntohs(recv_addr6.sin6_port);
-//         }else if(port_def->family == SCAN_FAMILY_INET4){
-//             inet_ntop(AF_INET, &recv_addr4.sin_addr, sender_ip, sizeof(sender_ip));
-//             sender_port = ntohs(recv_addr4.sin_port);
-//         }else{
-//             log_debug("%s data from unknown address type address size %zi",
-//                   threadsign, recv_saddrsize);
-//         }
 
         actual_size = recv_ret < sizeof(recv_buffer) ? recv_ret : (long)sizeof(recv_buffer);
         log_trace("%s data on port %i, size %li from [%s]:%hu",
@@ -1019,30 +901,11 @@ void scan_listen_thread(gpointer target_data, gpointer results_data)
             result->target.inaddr6 = recvaddr.sin6_addr;
         else
             result->target.inaddr = ((struct sockaddr_in *)&recvaddr)->sin_addr;
-//         if(port_def->family == SCAN_FAMILY_INET6)
-//             result->target.inaddr6 = recv_addr6.sin6_addr;
-//         else
-//             result->target.inaddr = recv_addr4.sin_addr;
-        //result->target_addr = recv_addr.sin_addr;
-        //result->target.inaddr = recv_addr.sin_addr;
-        //result->target.inaddr = recv_addr.sin_addr;
 
-//         //resolve hostname if it's not yet, else leave it empty
-//         if(!scan.opt_skip_resolve &&
-//             nm_table_get_num(response_ip_hostname, result->target_addr.s_addr) == NULL) {
-//
-//             scan_resolve_hostname_from_inaddr(result->target_addr.s_addr,
-//                                                 hostname_buffer, sizeof(hostname_buffer));
-//             result->hostname = strdup(hostname_buffer);
-//             nm_table_set_num(response_ip_hostname, result->target_addr.s_addr, result->hostname);
-//         }
         //resolve hostname if it's not yet, else leave it empty
         if (!scan.opt_skip_resolve && !nm_list_find_string(resolved_ip_list, sender_ip)) {
-            //TODO: review hostname resolves and comeback
             scan_resolve_saddr_hostname((struct sockaddr *)&recvaddr, port_def->family,
                                         hostname_buffer, sizeof(hostname_buffer));
-            //scan_resolve_hostname_from_inaddr(result->target.inaddr.s_addr,
-            //                                    hostname_buffer, sizeof(hostname_buffer));
             result->hostname = strdup(hostname_buffer);
             resolved_ip_list = nm_list_add(resolved_ip_list, strdup(sender_ip));
         }
@@ -1061,10 +924,7 @@ void scan_listen_thread(gpointer target_data, gpointer results_data)
     g_mutex_lock(&scan_stat_lock);
     scan.stat_list_ports++;
     g_mutex_unlock(&scan_stat_lock);
-
     nm_list_free(resolved_ip_list, true);
-
-    //nm_table_free(response_ip_hostname);
     log_debug("%s End listen thread [time: %lu ms]!", threadsign, nm_time_ms_diff(thread_start));
 }
 
@@ -1133,7 +993,7 @@ gpointer scan_main_connect_thread(gpointer data)
 
     //poll status of received results
     scan_result *result;
-    uint32_t unused_work, running_threads, returned_count;
+    uint32_t unused_work, running_threads;
     for (;;) {
         if (!scan_util_is_running())
             break;
@@ -1164,14 +1024,6 @@ gpointer scan_main_connect_thread(gpointer data)
         scan_process_result(result, &num_live);
         num_results++;
     }
-//     returned_count = g_async_queue_length(results_queue);
-//     for(int i=0; i<returned_count; i++){
-//         if(!scan_util_is_running())
-//             break;
-//         result = g_async_queue_pop(results_queue);
-//         scan_process_result(result, &num_live);
-//         num_results++;
-//     }
 
     log_info("Connect Summary: total targets %i, " \
              "%i results from %i hosts with %i found live in %lus]",
@@ -1228,7 +1080,6 @@ void scan_connect_thread(gpointer target_data, gpointer results_data)
             result = malloc(sizeof(scan_result));
             memset(result, 0, sizeof(scan_result));
         }
-        //result->target_addr = ip_addr;
         result->target.inaddr = ip_addr;
         result->response = SCAN_HSTATE_UNKNOWN;
         result->port = port_def.port;
