@@ -72,7 +72,7 @@ endif()
 add_custom_command(OUTPUT netmates.html 
                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc
                     COMMAND man2html 
-                    ARGS netmates.1 > netmates.html
+                    ARGS -M "" netmates.1 > netmates.html
                     VERBATIM)
 add_custom_target(nmdoc DEPENDS netmates.html)
 set_property(TARGET netmates APPEND 
@@ -81,6 +81,7 @@ set_property(TARGET netmates APPEND
 # Packaging
 include(InstallRequiredSystemLibraries)
 set(CPACK_GENERATOR DEB RPM TGZ)
+set(CPACK_PACKAGE_DIRECTORY dist/)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
 set(CPACK_PACKAGE_HOMEPAGE_URL ${PROJECT_HOMEPAGE_URL})
 set(CPACK_PACKAGE_CONTACT ${PROJECT_AUTHOR})
@@ -96,7 +97,6 @@ set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
 ## Redhat package
 set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
 set(CPACK_RPM_PACKAGE_LICENSE GPLv3)
-#set(CPACK_RPM_PACKAGE_REQUIRES "libc6 >= 2.17, glib2 >= 2.31, gtk3 >= 3.16")
 set(CPACK_RPM_PACKAGE_DESCRIPTION ${PROJECT_DESCRIPTION_LONG})
 #set(CPACK_RPM_PACKAGE_GROUP network)
 #set(CPACK_RPM_PACKAGE_VENDOR ${PROJECT_AUTHOR})
