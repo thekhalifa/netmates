@@ -258,7 +258,7 @@ bool probe_response_mdns(probe_result *result, const uint8_t *in_buffer, ssize_t
 
     const uint8_t *pointer = in_buffer;
     const uint8_t *endpointer = pointer + in_size;
-    char buffer[512], valbuffer[512];
+    char buffer[512], valbuffer[512], *matchstr;
     size_t retsize;
     proto_dns_message message;
     memset(&message, 0, sizeof(proto_dns_message));
@@ -310,19 +310,13 @@ bool probe_response_mdns(probe_result *result, const uint8_t *in_buffer, ssize_t
         if (message.rrecord.type == PROTO_DNS_TYPE_PTR) {
             retsize = proto_dns_decompile_string(pointer, in_buffer, valbuffer, sizeof(valbuffer));
             //log_trace("probe_mdns_response: PTR: %s -> %s", buffer, valbuffer);
-            //18:18:01 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _services._dns-sd._udp.local -> _amzn-wplay._tcp.local
-            //18:18:00 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _hap._tcp.local -> tado Internet Bridge IB1619341568._hap._tcp.local
-            //18:18:00 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _smb._tcp.local -> FRACTAL._smb._tcp.local
-            //18:18:01 ERROR nm-protocol.c:297: probe_mdns_response: PTR: _amzn-wplay._tcp.local -> amzn.dmgr:A1D89D4E2313B53AAA1CBFB5915E7A0E:xnVDMM+4u1:314947._amzn-wplay._tcp.local
-            
-            //_googlecast._tcp.local: type PTR, class IN, Chromecast-Ultra-38d0a53a70141ad71d2b2f9eaf55dc39._googlecast._tcp.local
-            
-            //TODO: check that it's not a blank answer 
-            //_smb._tcp.local vs. FRACTAL._smb._tcp.local
             //TODO: show other services without _ and _proto.local
             for (proto_signature *s = proto_mdns_definition.signatures; s->signature; s++) {
                 //log_trace("probe_mdns_response: looking for signature: %s in %s", s->signature, valbuffer);
-                if (strstr(valbuffer, s->signature)) {
+                matchstr = strstr(valbuffer, s->signature);
+                //when found, make sure the signature follows something
+                //e.g. for '_smb._tcp.local' we should have HOSTNAME._smb._tcp.local'
+                if (matchstr && matchstr > valbuffer) {
                     log_trace("probe_mdns_response: found signature: %s", s->signature);
                     if (s->host_type > result->host_type)
                         result->host_type = s->host_type;

@@ -856,7 +856,7 @@ int scan_list_arp_hosts()
         else
             nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_if, NULL);
 
-        nm_host_add_port(entry, 0, "arpcache");
+        //nm_host_add_port(entry, 0, "arpcache");
         scan.hosts = nm_host_merge_in_list(scan.hosts, entry);
         num_found++;
     }
@@ -903,7 +903,7 @@ int scan_list_gateways()
                 else
                     nm_host_set_attributes(gw_host, ip, NULL, NULL, HW_IFACE_NULL, NULL);
 
-                nm_host_add_port(gw_host, 0, "route");
+                //nm_host_add_port(gw_host, 0, "route");
                 scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host);
                 num_ip4_found++;
             }
@@ -939,7 +939,7 @@ int scan_list_gateways()
             else
                 nm_host_set_attributes(gw_host6, NULL, ip6, NULL, HW_IFACE_NULL, NULL);
 
-            nm_host_add_port(gw_host6, 0, "route6");
+            //nm_host_add_port(gw_host6, 0, "route6");
             scan.hosts = nm_host_merge_in_list(scan.hosts, gw_host6);
 
             num_ip6_found++;
@@ -1011,7 +1011,6 @@ int scan_list_neighbours()
     }
 
 
-    struct rtattr *attr;
     ssize_t ndsize, attrsize, attrvalsize;
 
     for (nh = (struct nlmsghdr *)recvbuff; NLMSG_OK(nh, recvret); nh = NLMSG_NEXT(nh, recvret)) {
@@ -1078,7 +1077,7 @@ int scan_list_neighbours()
             nm_host_set_attributes(entry, NULL, ip_buffer, NULL, hw_if, host_buffer);
         else
             nm_host_set_attributes(entry, ip_buffer, NULL, NULL, hw_if, host_buffer);
-        nm_host_add_port(entry, 0, "neighbour");
+        //nm_host_add_port(entry, 0, "neighbour");
         //nm_host_add_service(entry, "NEIGHBOR");
 
         scan.hosts = nm_host_merge_in_list(scan.hosts, entry);

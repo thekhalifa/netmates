@@ -186,8 +186,6 @@ bool probe_response_log(probe_result *result, const uint8_t *in_buffer, ssize_t 
     return true;
 }
 
-
-
 bool probe_send_proto_query(int sd, probe_port *sp, const char *logsign)
 {
     assert(sd > 0);
