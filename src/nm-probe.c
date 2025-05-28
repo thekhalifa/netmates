@@ -393,7 +393,7 @@ ssize_t probe_sock_set_saddr(struct sockaddr *saddr, enum probe_family family, s
 
     if (family == PROBE_FAMILY_INET6) {
         struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)saddr;
-        memcpy(&saddr6->sin6_addr, ((struct sockaddr_in6 *)inaddr), sizeof(struct in6_addr));
+        memcpy(&saddr6->sin6_addr, ((struct in6_addr *)inaddr), sizeof(struct in6_addr));
         saddr6->sin6_port = htons(port);
         return sizeof(struct sockaddr_in6);
     }
