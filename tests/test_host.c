@@ -1,3 +1,9 @@
+/**
+ * @file test_host.c
+ * nm-host tests
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include <malloc.h>
 
 #include "munit.h"

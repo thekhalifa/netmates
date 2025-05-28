@@ -1,3 +1,9 @@
+/**
+ * @file nm-appwindow.c
+ * GTK application and window
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-appwindow.h"
 
 static nm_window window = {
@@ -16,7 +22,7 @@ static nm_window window = {
     .icons[HOST_TYPE_KNOWN] =       {"network-wired", "Previously seen device, not response"},
 };
 
-
+/** create host title string based on known address */
 static char *create_title_label(nm_host *host)
 {
     static const char *title_format = "<span foreground=\"#338E5E\" size=\"larger\"><b>%s</b></span>";
@@ -55,6 +61,7 @@ static char *create_title_label(nm_host *host)
     return g_strdup(buffer);
 }
 
+/** create summary tooltip string for a host */
 static char *create_tooltip(nm_host *host)
 {
     static const char *hostname_format = "Hostname: %s";
@@ -109,7 +116,7 @@ static char *create_tooltip(nm_host *host)
     return g_strdup(buffer);
 }
 
-
+/** create service tags directly into the parent widget */
 void create_services_tags(GtkWidget *flow_box, nm_host *host)
 {
     g_assert(flow_box != NULL && host != NULL);
@@ -134,7 +141,7 @@ void create_services_tags(GtkWidget *flow_box, nm_host *host)
     }
 }
 
-
+/* create a list row for a host with all contents */
 static GtkWidget *list_create_list_row(nm_host *host)
 {
 

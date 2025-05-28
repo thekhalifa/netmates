@@ -1,3 +1,9 @@
+/**
+ * @file nm-probe.h
+ * Probe states.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #ifndef NM_PROBE_H_INCLUDED
 #define NM_PROBE_H_INCLUDED
 

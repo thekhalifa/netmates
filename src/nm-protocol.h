@@ -1,3 +1,9 @@
+/**
+ * @file nm-protocol.h
+ * Probe specific protocol partial implementations.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #ifndef NM_PROTOCOL_H_INCLUDED
 #define NM_PROTOCOL_H_INCLUDED
 

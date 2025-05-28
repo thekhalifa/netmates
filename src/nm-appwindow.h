@@ -1,3 +1,9 @@
+/**
+ * @file nm-appwindow.h
+ * GTK application and window
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #ifndef NETWORK_MATES_NM_APPWINDOW_H
 #define NETWORK_MATES_NM_APPWINDOW_H
 

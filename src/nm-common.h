@@ -1,3 +1,9 @@
+/**
+ * @file nm-common.h
+ * Common structures and utilities.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #ifndef NETWORK_MATES_NM_COMMON_H
 #define NETWORK_MATES_NM_COMMON_H
 

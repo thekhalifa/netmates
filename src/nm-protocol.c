@@ -1,6 +1,13 @@
+/**
+ * @file nm-protocol.c
+ * Probes for SSDP, MDNS protocols.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-protocol.h"
 #include "nm-scan.h"
 
+/** SSDP and DIAL messages */
 static proto_query proto_ssdp_queries[] = {
     {
         .message = ""
@@ -21,6 +28,7 @@ static proto_query proto_ssdp_queries[] = {
     {},
 };
 
+/** SSDP query signatures to service/host mapping */
 static proto_signature proto_ssdp_signatures[] = {
     {.signature = "upnp:rootdevice", .service_name = "upnp", .host_type = HOST_TYPE_UNKNOWN},
     {.signature = "urn:dial-multiscreen-org:service:dial",  .service_name = "screen", .host_type = HOST_TYPE_TV},
@@ -40,7 +48,7 @@ proto_def proto_ssdp_definition = {
     .signatures = proto_ssdp_signatures,
 };
 
-
+/** MDNS message */
 static proto_query proto_mdns_queries[] = {
     {.message = "_services._dns-sd._udp.local"},
     {.message = "_amzn-wplay._tcp.local"},
@@ -64,7 +72,7 @@ static proto_query proto_mdns_queries[] = {
     {},
 };
 
-
+/** MDNS query and service/host mapping */
 static proto_signature proto_mdns_signatures[] = {
     {.signature = "_amzn-wplay._tcp", .service_name = "amazon-wplay", .host_type = HOST_TYPE_TV},
     {.signature = "_amzn-alexa._tcp", .service_name = "alexa", .host_type = HOST_TYPE_DEVICE},
@@ -118,7 +126,7 @@ int proto_generate_query_natpmp_public(char *buff, size_t buffsize, char *messag
     return msgsize;
 }
 
-/* convert c-string to dns-string prefixed by length and no . */
+/** convert c-string to dns-string prefixed by length and no. */
 static size_t proto_dns_compile_string(const char *name, uint8_t *buffer, size_t bufflen)
 {
     int namelen = strlen(name);
@@ -139,7 +147,7 @@ static size_t proto_dns_compile_string(const char *name, uint8_t *buffer, size_t
     return mstr_pointer - buffer;
 }
 
-/* convert dns-string to normal c-string */
+/** convert dns-string to normal c-string. */
 static size_t proto_dns_decompile_string(const uint8_t *name, const uint8_t *fullmsg, char *buffer, size_t bufflen)
 {
     int runsize = 0;
@@ -175,6 +183,7 @@ static size_t proto_dns_decompile_string(const uint8_t *name, const uint8_t *ful
     return mstr - name;
 }
 
+/** compose a DNS message */
 size_t proto_dns_compose_query(uint8_t *buff, size_t bufflen, uint16_t mid, char *queryname,
                                uint16_t qtype, uint16_t qclass)
 {
@@ -210,7 +219,7 @@ size_t proto_dns_compose_query(uint8_t *buff, size_t bufflen, uint16_t mid, char
 
 }
 
-/* generate a PTR query to the /addr/ ip 1.2.3.4 becomes 4.3.2.1.in-addr.arpa */
+/** generate a PTR query to the /addr/ ip 1.2.3.4 becomes 4.3.2.1.in-addr.arpa */
 int proto_generate_query_dns_targetptr(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
     size_t msgsize;
@@ -230,7 +239,7 @@ int proto_generate_query_dns_targetptr(char *buff, size_t buffsize, char *messag
     return msgsize;
 }
 
-/* generate a PTR query with /message/ */
+/** generate a PTR query with /message/ */
 int proto_generate_query_dns(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
     size_t msgsize;
@@ -241,7 +250,7 @@ int proto_generate_query_dns(char *buff, size_t buffsize, char *message, struct 
     return msgsize;
 }
 
-/* generate a PTR query with /message/ and UNICAST flag */
+/** generate a PTR query with /message/ and UNICAST flag */
 int proto_generate_query_mdns(char *buff, size_t buffsize, char *message, struct sockaddr *targetaddr)
 {
     size_t msgsize;
@@ -251,7 +260,7 @@ int proto_generate_query_mdns(char *buff, size_t buffsize, char *message, struct
     return msgsize;
 }
 
-
+/** process MDNS response */
 bool probe_response_mdns(probe_result *result, const uint8_t *in_buffer, ssize_t in_size)
 {
     assert(in_buffer != NULL);
@@ -333,6 +342,7 @@ bool probe_response_mdns(probe_result *result, const uint8_t *in_buffer, ssize_t
     return true;
 }
 
+/** process SSDP response */
 bool probe_response_ssdp(probe_result *result, const uint8_t *in_buffer, ssize_t in_size)
 {
     assert(in_buffer != NULL);

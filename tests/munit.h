@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /* µnit Testing Framework
  * Copyright (c) 2013-2017 Evan Nemerson <evan@nemerson.com>
  *

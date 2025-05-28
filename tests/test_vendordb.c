@@ -1,3 +1,9 @@
+/**
+ * @file test_vendordb.c
+ * nm-vendordb tests
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "munit.h"
 
 #include "nm-common.h"

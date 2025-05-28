@@ -1,3 +1,9 @@
+/**
+ * @file test_window.c
+ * nm-window tests
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-appwindow.h"
 
 

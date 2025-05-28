@@ -1,5 +1,12 @@
+/**
+ * @file nm-probe.c
+ * Probe definitions and methods.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-probe.h"
 
+/** probe definitions and protocols */
 static probe_port probe_port_connect_list[] = {
     //rfc 2616
     {   .method = PROBE_TCP_CONNECT, .port = 80,    .service = "http", .required = 1, .host_type = HOST_TYPE_PC },

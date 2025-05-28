@@ -1,8 +1,15 @@
+/**
+ * @file nm-vendordb.c
+ * MAC vendor database file operations.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-vendordb.h"
 
 static nm_reg_database reg_database = {0, 0, 0, .reg_records = NULL};
 
 
+/** compare two records */
 static int vendor_db_util_compare_record(const void *a, const void *b)
 {
     nm_reg_record *rec_a = (nm_reg_record *)a;
@@ -10,6 +17,7 @@ static int vendor_db_util_compare_record(const void *a, const void *b)
     return strcmp(rec_a->assignment, rec_b->assignment);
 }
 
+/** extract line tokens. */
 static char *vendor_db_util_extract_token(char *line, int index)
 {
     char *scan_pointer, *scan_eol;
@@ -55,6 +63,8 @@ static char *vendor_db_util_extract_token(char *line, int index)
     return NULL;
 }
 
+/** Utility to add records into the vdb.
+ */
 static int vendor_db_util_add_record(char *fld_assignment, char *fld_organisation)
 {
 

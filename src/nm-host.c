@@ -1,3 +1,9 @@
+/**
+ * @file nm-host.c
+ * Host object
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-host.h"
 
 

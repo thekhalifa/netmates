@@ -1,3 +1,9 @@
+/**
+ * @file nm-scan.h
+ * Network scanning operations and thread pools.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #ifndef NETWORK_MATES_NM_SCAN_H
 #define NETWORK_MATES_NM_SCAN_H
 

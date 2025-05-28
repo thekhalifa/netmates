@@ -1,3 +1,9 @@
+/**
+ * @file test_protocol.c
+ * nm-protocol tests
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "munit.h"
 
 #include "nm-protocol.h"

@@ -1,8 +1,10 @@
-dist/
-build/
-buildrelease/
-logs/
+
 .idea/
 .kdev4/
 *.kdev4
+build/
+buildrelease/
+dist/
+doc/html
 gui/*~
+logs/

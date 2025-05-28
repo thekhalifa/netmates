@@ -1,3 +1,9 @@
+/**
+ * @file nm-common.c
+ * Common structures and utilities.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-common.h"
 
 
@@ -79,6 +85,7 @@ char *nm_string_extract_token(char *line, char delimiter, int index)
     return NULL;
 }
 
+/* count lines in a text buffer up to size len */
 int nm_string_count_lines(const char *line, size_t len)
 {
     int num_lines = 0;

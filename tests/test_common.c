@@ -1,3 +1,9 @@
+/**
+ * @file test_common.c
+ * nm-common tests
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "munit.h"
 
 #include "nm-common.h"

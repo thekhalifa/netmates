@@ -83,3 +83,11 @@ Potential future improvements
 - avoid mixing C types and switch to standard?
 
 
+# Copyright
+
+Copyright 2025, Ahmad Khalifa
+Licensed under the GPLv3
+
+Includes:
+- log.c, Copyright 2020 rxi
+- munit, Copyright 2013-2018 Evan Nemerson

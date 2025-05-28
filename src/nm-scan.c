@@ -1,3 +1,9 @@
+/**
+ * @file nm-scan.c
+ * Network scanning operations and thread pools.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include "nm-scan.h"
 
 static scan_state scan = {

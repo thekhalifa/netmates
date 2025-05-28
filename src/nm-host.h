@@ -1,3 +1,9 @@
+/**
+ * @file nm-host.h
+ * Host object
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #ifndef NETWORK_MATES_NM_HOST_H
 #define NETWORK_MATES_NM_HOST_H
 
@@ -21,6 +27,7 @@ enum nm_host_type {
     HOST_TYPE_LENGTH
 };
 
+/** MAC address & vendor if queried. */
 struct hw_details {
     char *addr;
     char *vendor;

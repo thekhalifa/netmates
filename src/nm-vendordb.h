@@ -1,3 +1,9 @@
+/**
+ * @file nm-vendordb.h
+ * MAC vendor database file operations.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #ifndef NETWORK_MATES_NM_VENDORDB_H
 #define NETWORK_MATES_NM_VENDORDB_H
 
@@ -6,6 +12,7 @@
 #include <string.h>
 
 #include "nm-common.h"
+
 
 
 #define NL_VDB_CAP_SEGMENT 1024
@@ -21,11 +28,13 @@
 #define NL_VDB_EXP_FLD_ASSIGN_SIZE 6
 
 
+/** MAC vendor assignment record - single line. */
 typedef struct {
     char *assignment;
     char *organisation;
 } nm_reg_record;
 
+/** MAC vendor assignment database - list of records. */
 typedef struct {
     int initialised;
     int num_records;
@@ -33,8 +42,11 @@ typedef struct {
     nm_reg_record *reg_records;
 } nm_reg_database;
 
+/** Initialise the database structure. */
 int             vendor_db_init();
+/** Destroy the database and all records. */
 int             vendor_db_destroy();
+/** Query for a MAC vendor. */
 const char     *vendor_db_query(const char *assigned);
 
 

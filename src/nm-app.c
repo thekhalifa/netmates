@@ -1,3 +1,9 @@
+/**
+ * @file nm-app.c
+ * Main for the command line application.
+ *
+ * SPDX-License-Identifier: GPL-3.0
+ */
 #include <signal.h>
 #include "nm-common.h"
 #include "nm-scan.h"
