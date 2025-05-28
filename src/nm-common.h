@@ -16,7 +16,7 @@
 #include "nm-vendordb.h"
 
 #define NM_APP_NAME "netmates"
-#define NM_APP_VERSION  "0.2"
+#define NM_APP_VERSION  "0.2.3"
 
 #define NM_SMALL_BUFFSIZE 64
 #define NM_GEN_BUFFSIZE 512

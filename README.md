@@ -20,7 +20,7 @@ Several discovery methods are used:
 - **LSD**: listening for notification of BitTorrent info hash
 - Other common devices
 
-For ipv6 neighbour discovery, there is no explicit solicitation of responses through ping or RA to avoid requiring a privileged NET_RAW operation. And also avoid calling an external application like ping. Instead, users can solicit all nodes through a basic ping to the all-node multicast address:
+For ipv6 neighbour discovery, there is no explicit solicitation of responses through ping or RA to avoid requiring a privileged NET_RAW operation. And also avoid calling an external application like ping. Instead, you can solicit all nodes through a basic ping to the all-node multicast address:
 
         $ ping ff02::1
 
